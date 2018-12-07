@@ -1,0 +1,9 @@
+NOTICE/WARNING/README:
+This fork (https://github.com/uw-ictd/openair-cn.git) of the OpenAirInterface EPC (https://github.com/OPENAIRINTERFACE/openair-cn.git) is specifically intended to be a stable, long-term-support version of the code for use by people who simply want to get up and running with a basic LTE EPC. The EPC currently targets Release 14, which is the last of the LTE-Advanced releases before 5G; we have no current plans to support any other release.
+
+Which Branches Are Important And What Are The Changes?
+On April 12, 2018, the CoLTE team forked OPENAIRINTERFACE/openair-cn and started stabilizing the most recent commit on the /develop branch, working from commit aad338 (fb_merge_y18w06). This repository does track all the changes made from OPENAIRINTERFACE/openair-cn onwards, but we specifically work ONLY in our own branches for purposes of clarity and ease of re-integration with the OpenAirInterface community and repository. The following two branches contain our changes:
+
+oai_stable: This branch is designed to remain very similar to the standard OAI architecture, and contains nothing but code maturity/stability fixes. If you're a telecom engineer, just want a stable version of OAI, and already know how to operate it, this branch is for you.
+
+colte_stable: The CoLTE project (https://github.com/uw-ictd/colte.git) is an all-in-one LTE network in a box that comes with a wide range of other services (i.e. a web-based admin tool, support for user monitoring/billing, etc.). To support these other services we had to extend the OAI EPC with a couple of extra features and functions; these features are located only in colte_stable. If you are a small-scale network operator or ISP wanting to get started with CoLTE, this branch is for you.
