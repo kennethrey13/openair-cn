@@ -1726,7 +1726,8 @@ void mme_ue_context_update_ue_sig_connection_state (
     // Update Stats
     update_mme_app_stats_connected_ue_add();
   }
-  return;
+
+  OAILOG_FUNC_OUT (LOG_MME_APP);
 }
 
 //-------------------------------------------------------------------------------------------------------
