@@ -688,7 +688,17 @@ sgw_handle_sgi_endpoint_updated (
 #endif
 
       if (rv < 0) {
-        OAILOG_ERROR (LOG_SPGW_APP, "ERROR in setting up TUNNEL err=%d\n", rv);
+        OAILOG_ERROR (LOG_SPGW_APP, "SMS: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
+        rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+        if (rv < 0) {
+          OAILOG_ERROR (LOG_SPGW_APP, "SMS NESTED: got error %d tearing down GTP tunnel in-between setups.\n", rv);
+        }
+        rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+        if (rv < 0) {
+          OAILOG_ERROR (LOG_SPGW_APP, "SMS NESTED: got error %d setting up GTP tunnel for second time.\n", rv);
+        } else {
+          OAILOG_ERROR (LOG_SPGW_APP, "SMS NESTED: successfully setup GTP tunnel on second attempt (after teardown).\n", rv);
+        }
       }
 
 #if ENABLE_LIBGTPNL
@@ -1071,9 +1081,16 @@ sgw_handle_delete_session_request (
 //------------------------------------------------------------------------------
 static void sgw_release_all_enb_related_information (sgw_eps_bearer_ctxt_t * const eps_bearer_ctxt)
 {
+  int rv = RETURNok;
 
   OAILOG_FUNC_IN(LOG_SPGW_APP);
   if ( eps_bearer_ctxt) {
+    /* SMS: Hotfix for bug that isn't tearing down GTP tunnels when idle disconnect occurs */
+    rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt->enb_teid_S1u);
+    if (rv < 0) {
+      OAILOG_ERROR (LOG_SPGW_APP, "ERROR in tearing down old TUNNEL err=%d\n", rv);
+    }
+
     memset (&eps_bearer_ctxt->enb_ip_address_S1u, 0, sizeof (eps_bearer_ctxt->enb_ip_address_S1u));
     eps_bearer_ctxt->enb_teid_S1u = INVALID_TEID;
   }
@@ -1302,7 +1319,17 @@ sgw_handle_create_bearer_response (
                     rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, eps_bearer_ctxt_p->eps_bearer_id, imsi, pgw_pcef_get_rule_by_id(pgw_ni_cbr_proc->sdf_id));
 #endif
                     if (rv < 0) {
-                      OAILOG_ERROR (LOG_SPGW_APP, "ERROR in setting up TUNNEL err=%d\n", rv);
+                      OAILOG_ERROR (LOG_SPGW_APP, "SMS2: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
+                      rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+                      if (rv < 0) {
+                        OAILOG_ERROR (LOG_SPGW_APP, "SMS2 NESTED: got error %d tearing down GTP tunnel in-between setups.\n", rv);
+                      }
+                      rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+                      if (rv < 0) {
+                        OAILOG_ERROR (LOG_SPGW_APP, "SMS2 NESTED: got error %d setting up GTP tunnel for second time.\n", rv);
+                      } else {
+                        OAILOG_ERROR (LOG_SPGW_APP, "SMS2 NESTED: successfully setup GTP tunnel on second attempt (after teardown).\n", rv);
+                      }
                     }
 
                     if (rv < 0) {
