@@ -202,6 +202,7 @@ static int _emm_cn_pdn_config_res (emm_cn_pdn_config_res_t * msg_pP)
 
   if (emm_ctx == NULL) {
     OAILOG_ERROR (LOG_NAS_EMM, "EMMCN-SAP  - " "Failed to find UE associated to id " MME_UE_S1AP_ID_FMT "...\n", msg_pP->ue_id);
+    unlock_ue_contexts(ue_mm_context);
     OAILOG_FUNC_RETURN (LOG_NAS_EMM, rc);
   }
 
@@ -216,7 +217,8 @@ static int _emm_cn_pdn_config_res (emm_cn_pdn_config_res_t * msg_pP)
      * Unfortunately we didn't find our default APN...
      */
     OAILOG_INFO (LOG_NAS_ESM, "No suitable APN found ue_id=" MME_UE_S1AP_ID_FMT ")\n",ue_mm_context->mme_ue_s1ap_id);
-    return RETURNerror;
+    unlock_ue_contexts(ue_mm_context);
+    OAILOG_FUNC_RETURN (LOG_NAS_EMM, RETURNerror);
   }
 
   // search for an already set PDN context
@@ -333,6 +335,7 @@ static int _emm_cn_pdn_connectivity_res (emm_cn_pdn_res_t * msg_pP)
 
   if (emm_ctx == NULL) {
     OAILOG_ERROR (LOG_NAS_EMM, "EMMCN-SAP  - " "Failed to find UE associated to id " MME_UE_S1AP_ID_FMT "...\n", msg_pP->ue_id);
+    unlock_ue_contexts(ue_mm_context);
     OAILOG_FUNC_RETURN (LOG_NAS_EMM, rc);
   }
 
