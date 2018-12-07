@@ -36,6 +36,7 @@ case "$OS_DISTRO" in
   centos) OS_BASEDISTRO="fedora"; INSTALLER="yum"; CMAKE="cmake3" ;;
   debian) OS_BASEDISTRO="debian"; INSTALLER="apt-get"; CMAKE="cmake" ;;
   ubuntu) OS_BASEDISTRO="debian"; INSTALLER="apt-get"; CMAKE="cmake" ;;
+  linuxmint) OS_BASEDISTRO="debian"; INSTALLER="apt-get"; CMAKE="cmake" ;;
 esac
 
 SUDO='sudo -S -E'
@@ -106,7 +107,7 @@ version_gt() {
 # If we can't check the distribution, it returns "Unknown"
 # This function return always true as exit code by design
 # Examples:
-#   ubuntu16.04
+#   ubuntu18.04
 #   debian8.5
 get_distribution_release() {
     if [[ ! -z "$OS_DISTRO$OS_RELEASE" ]]; then
@@ -404,7 +405,7 @@ check_install_hss_software() {
         python-pexpect \
         libapache2-mod-php*"
       ;;
-    "ubuntu16.04")
+    "ubuntu18.04")
       PACKAGE_LIST="\
         php \
         python-pexpect \
