@@ -97,6 +97,8 @@ typedef struct {
   struct dict_object *dataobj_s6a_auth_session_state;
   struct dict_object *dataobj_s6a_result_code;
   struct dict_object *dataobj_s6a_experimental_result;
+  struct dict_object *dataobj_s6a_vendor_id;
+  struct dict_object *dataobj_s6a_experimental_result_code;
 
   /* S6A specific AVPs */
   struct dict_object *dataobj_s6a_visited_plmn_id;
@@ -111,6 +113,7 @@ typedef struct {
   struct dict_object *dataobj_s6a_re_synchronization_info;
   struct dict_object *dataobj_s6a_service_selection;
   struct dict_object *dataobj_s6a_ue_srvcc_cap;
+  struct dict_object *dataobj_s6a_cancel_type;
 
   /* Handlers */
   struct disp_hdl *aia_hdl;   /* Authentication Information Answer Handle */

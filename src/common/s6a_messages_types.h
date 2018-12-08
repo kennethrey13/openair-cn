@@ -41,6 +41,8 @@
 #define S6A_UPDATE_LOCATION_ANS(mSGpTR)  (mSGpTR)->ittiMsg.s6a_update_location_ans
 #define S6A_AUTH_INFO_REQ(mSGpTR)        (mSGpTR)->ittiMsg.s6a_auth_info_req
 #define S6A_AUTH_INFO_ANS(mSGpTR)        (mSGpTR)->ittiMsg.s6a_auth_info_ans
+#define S6A_CANCEL_LOCATION_REQ(mSGpTR)  (mSGpTR)->ittiMsg.s6a_cancel_location_req
+#define S6A_CANCEL_LOCATION_ANS(mSGpTR)  (mSGpTR)->ittiMsg.s6a_cancel_location_ans
 
 
 #define AUTS_LENGTH 14
@@ -80,6 +82,28 @@ typedef struct s6a_update_location_ans_s {
 
 
 } s6a_update_location_ans_t;
+
+typedef struct s6a_cancel_location_req_s {
+  char       imsi[IMSI_BCD_DIGITS_MAX + 1]; // username
+  uint8_t    imsi_length;               // username
+  imsi64_t   imsi64;
+
+  // missing                           // origin host
+  // missing                           // origin realm
+
+  // missing                           // destination host
+  // missing                           // destination realm
+} s6a_cancel_location_req_t;
+
+typedef struct s6a_cancel_location_ans_s {
+  s6a_result_t        result;              // Result of the update location request procedure
+  subscription_data_t subscription_data;   // subscriber status,
+
+  network_access_mode_t access_mode;
+  rau_tau_timer_t       rau_tau_timer;
+  char    imsi[IMSI_BCD_DIGITS_MAX + 1];
+  uint8_t imsi_length;
+} s6a_cancel_location_ans_t;
 
 typedef struct s6a_auth_info_req_s {
   char    imsi[IMSI_BCD_DIGITS_MAX + 1];

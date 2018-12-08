@@ -64,6 +64,37 @@ decode_detach_request (
   return decoded;
 }
 
+// SMS NOTE: This is the *OLD* encode_detach_request which actually just "encodes" a
+// DetachRequest that would be sent from UE to MME. The MME->UE one is significantly 
+// smaller/shorter and has less content, is replaced below since there's no reason for
+// an MME to ever send a UE-initiated message. We could rename these down the road if 
+// we want to keep encode/decode functions for both directions, but not sure why.
+// int
+// encode_detach_request (
+//   detach_request_msg * detach_request,
+//   uint8_t * buffer,
+//   uint32_t len)
+// {
+//   int                                     encoded = 0;
+//   int                                     encode_result = 0;
+
+//   /*
+//    * Checking IEI and pointer
+//    */
+//   CHECK_PDU_POINTER_AND_LENGTH_ENCODER (buffer, DETACH_REQUEST_MINIMUM_LENGTH, len);
+//   *(buffer + encoded) = ((encode_u8_nas_key_set_identifier (&detach_request->naskeysetidentifier) << 4) | (encode_u8_detach_type (&detach_request->detachtype) & 0x0f));
+//   encoded++;
+
+//   if ((encode_result = encode_eps_mobile_identity (&detach_request->gutiorimsi, 0, buffer + encoded, len - encoded)) < 0)       //Return in case of error
+//     return encode_result;
+//   else
+//     encoded += encode_result;
+
+//   return encoded;
+// }
+
+// SMS NOTE: This is the new encode_detach_request that goes MME->UE. This message
+// is much smaller, as you can see.
 int
 encode_detach_request (
   detach_request_msg * detach_request,
@@ -71,19 +102,13 @@ encode_detach_request (
   uint32_t len)
 {
   int                                     encoded = 0;
-  int                                     encode_result = 0;
 
   /*
    * Checking IEI and pointer
    */
   CHECK_PDU_POINTER_AND_LENGTH_ENCODER (buffer, DETACH_REQUEST_MINIMUM_LENGTH, len);
-  *(buffer + encoded) = ((encode_u8_nas_key_set_identifier (&detach_request->naskeysetidentifier) << 4) | (encode_u8_detach_type (&detach_request->detachtype) & 0x0f));
+  *(buffer + encoded) = (encode_u8_detach_type (&detach_request->detachtype) & 0x0f);
   encoded++;
-
-  if ((encode_result = encode_eps_mobile_identity (&detach_request->gutiorimsi, 0, buffer + encoded, len - encoded)) < 0)       //Return in case of error
-    return encode_result;
-  else
-    encoded += encode_result;
 
   return encoded;
 }

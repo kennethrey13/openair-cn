@@ -153,6 +153,47 @@ emm_send_detach_accept (
   OAILOG_FUNC_RETURN (LOG_NAS_EMM, size);
 }
 
+/****************************************************************************
+ **                                                                        **
+ ** Name:    emm_send_detach_request()                                     **
+ **                                                                        **
+ ** Description: Builds Detach Accept message                              **
+ **                                                                        **
+ **      THIS Detach Request message is sent by the MME to the UE          **
+ **      to indicate that the network-initiated detach procedure           **
+ **      is being started.                                                 **
+ **                                                                        **
+ ** Inputs:  msg:       The EMMAS-SAP primitive to process                 **
+ **      Others:    None                                                   **
+ **                                                                        **
+ ** Outputs:     emm_msg:   The EMM message to be sent                     **
+ **      Return:    The size of the EMM message                            **
+ **      Others:    None                                                   **
+ **                                                                        **
+ ***************************************************************************/
+int
+emm_send_detach_request (
+  const emm_as_data_t * msg,
+  detach_request_msg * emm_msg)
+{
+  OAILOG_FUNC_IN (LOG_NAS_EMM);
+  int                                     size = EMM_HEADER_MAXIMUM_LENGTH;
+
+  OAILOG_INFO (LOG_NAS_EMM, "EMMAS-SAP - Send Detach Request message\n");
+  /*
+   * Mandatory - Message type
+   */
+  emm_msg->messagetype = DETACH_REQUEST;
+
+  // detach_type_t                   detachtype;
+  size += DETACH_REQUEST_MINIMUM_LENGTH;
+  // SMS TODO: WHICH ONE IS CORRECT?!?
+  // emm_msg->detachtype.typeofdetach = EMM_DETACH_TYPE_NOT_REATTACH;
+  emm_msg->detachtype.typeofdetach = EMM_DETACH_TYPE_EPS_IMSI;
+
+  OAILOG_FUNC_RETURN (LOG_NAS_EMM, size);
+}
+
 
 /*
    --------------------------------------------------------------------------

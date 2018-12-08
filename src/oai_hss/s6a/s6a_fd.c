@@ -103,6 +103,10 @@ s6a_init_objs (
    */
   CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Origin-Host", &s6a_cnf.dataobj_s6a_origin_host, ENOENT));
   CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Origin-Realm", &s6a_cnf.dataobj_s6a_origin_realm, ENOENT));
+  CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Destination-Host", &s6a_cnf.dataobj_s6a_destination_host, ENOENT));
+  CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Destination-Realm", &s6a_cnf.dataobj_s6a_destination_realm, ENOENT));
+  CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &s6a_cnf.dataobj_s6a_session_id, ENOENT));
+  CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Cancellation-Type", &s6a_cnf.dataobj_s6a_cancel_type, ENOENT));
   CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "User-Name", &s6a_cnf.dataobj_s6a_imsi, ENOENT));
   CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "IMEI", &s6a_cnf.dataobj_s6a_imei, ENOENT));
   CHECK_FCT (fd_dict_search (fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Software-Version", &s6a_cnf.dataobj_s6a_software_version, ENOENT));
@@ -226,41 +230,55 @@ s6a_init (
    * Register the callback
    */
   memset (&when, 0, sizeof (when));
-  when.command = s6a_cnf.dataobj_s6a_auth_cmd;
-  when.app = s6a_cnf.dataobj_s6a_app;
+
   /*
    * Register the callbacks for S6A Application
    */
+  when.command = s6a_cnf.dataobj_s6a_auth_cmd;
+  when.app = s6a_cnf.dataobj_s6a_app;
   CHECK_FCT (fd_disp_register (s6a_auth_info_cb, DISP_HOW_CC, &when, NULL, &handle));
-
   if (handle == NULL) {
     strcpy (why, "cannot register authentication info req cb");
     goto err;
   }
 
-  when.command = s6a_cnf.dataobj_s6a_loc_up;
-  when.app = s6a_cnf.dataobj_s6a_app;
   /*
    * Register the callbacks for S6A Application
    */
+  when.command = s6a_cnf.dataobj_s6a_loc_up;
+  when.app = s6a_cnf.dataobj_s6a_app;
   CHECK_FCT (fd_disp_register (s6a_up_loc_cb, DISP_HOW_CC, &when, NULL, &handle));
-
   if (handle == NULL) {
     strcpy (why, "cannot register update location req cb");
     goto err;
   }
 
-  when.command = s6a_cnf.dataobj_s6a_purge_ue;
-  when.app = s6a_cnf.dataobj_s6a_app;
   /*
    * Register the callbacks for S6A Application
    */
+  when.command = s6a_cnf.dataobj_s6a_purge_ue;
+  when.app = s6a_cnf.dataobj_s6a_app;
   CHECK_FCT (fd_disp_register (s6a_purge_ue_cb, DISP_HOW_CC, &when, NULL, &handle));
-
   if (handle == NULL) {
     strcpy (why, "cannot register purge ue req cb");
     goto err;
   }
+
+  /* SMS CLR */
+  /*
+   * Register the callbacks for S6A Application
+   */
+  when.command = s6a_cnf.dataobj_s6a_cancel_loc_ans;
+  when.app = s6a_cnf.dataobj_s6a_app;
+  CHECK_FCT (fd_disp_register (s6a_cancel_loc_ans_cb, DISP_HOW_CC, &when, NULL, &handle));
+  if (handle == NULL) {
+    strcpy (why, "cannot register cancel location ans cb");
+    goto err;
+  }
+
+
+
+
 
   FPRINTF_NOTICE ( "Initializing s6a layer: DONE\n");
   return 0;

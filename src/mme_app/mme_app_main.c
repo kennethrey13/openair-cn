@@ -224,6 +224,13 @@ void *mme_app_thread (void *args)
       }
       break;
 
+    case S6A_CANCEL_LOCATION_REQ:{
+        /*
+         * We received the update location answer message from HSS -> Handle it
+         */
+        mme_app_handle_s6a_cancel_location_req (&received_message_p->ittiMsg.s6a_cancel_location_req);
+      }
+      break;
 
     case TERMINATE_MESSAGE:{
         /*
@@ -272,8 +279,8 @@ void *mme_app_thread (void *args)
       break;
 
    default:{
-      OAILOG_DEBUG (LOG_MME_APP, "Unkwnon message ID %d:%s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
-        AssertFatal (0, "Unkwnon message ID %d:%s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
+      OAILOG_DEBUG (LOG_MME_APP, "Unknown message ID %d:%s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
+        AssertFatal (0, "Unknown message ID %d:%s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
       }
       break;
     }
