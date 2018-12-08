@@ -626,6 +626,7 @@ add_library (SGW
   ${SGW_DIR}/sgw_handlers.c
   ${SGW_DIR}/sgw_task.c
   ${SGW_DIR}/spgw_config.c
+  ${SGW_DIR}/sgw_db_connector.c
   )
 
 set(MME_DIR ${OPENAIRCN_DIR}/src/mme_app)
@@ -861,6 +862,11 @@ set(CMAKE_MODULE_PATH "${OPENAIRCN_DIR}/build/cmake_modules" "${CMAKE_MODULE_PAT
 
 include(FindPkgConfig)
 
+INCLUDE(FindMySQL)
+IF( NOT MySQL_FOUND )
+  MESSAGE( SEND_ERROR "MySQL Client is required" )
+ENDIF( NOT MySQL_FOUND )
+
 pkg_search_module(LIBXML2 libxml-2.0 REQUIRED)
 include_directories(${LIBXML2_INCLUDE_DIRS})
 
@@ -962,7 +968,8 @@ endif( ITTI_ANALYZER )
 target_link_libraries (spgw
   -Wl,--start-group
   GTPV1U SGW S11_SGW GTPV2C UDP_SERVER ${MSC_LIB} ${ITTI_LIB} ${XML_MSG_DUMP_LIB} ${3GPP_TYPES_LIB} 
-   ${3GPP_TYPES_XML_LIB} CN_UTILS HASHTABLE BSTR
+   ${3GPP_TYPES_XML_LIB} CN_UTILS HASHTABLE BSTR ${MySQL_LIBRARY}
+database for static IP mappings for each UE, do not dynamically assign.
   -Wl,--end-group
   pthread m rt gtpnl ${LFDS} ${CONFIG_LIBRARIES}  ${LIBXML2_LIBRARIES}  
   )

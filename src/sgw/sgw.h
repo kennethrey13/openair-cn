@@ -71,7 +71,6 @@ typedef struct sgw_app_s {
   gtpv1u_data_t    gtpv1u_data;
 } sgw_app_t;
 
-
 typedef struct pgw_app_s {
   STAILQ_HEAD(ipv4_list_free_head_s,     ipv4_list_elm_s)  ipv4_list_free;
   STAILQ_HEAD(ipv4_list_allocated_head_s, ipv4_list_elm_s) ipv4_list_allocated;

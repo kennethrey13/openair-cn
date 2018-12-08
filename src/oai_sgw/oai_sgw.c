@@ -73,6 +73,8 @@
 #include "pid_file.h"
 #include "timer.h"
 
+#include "pgw_ue_ip_address_alloc.h"
+#include "pgw_lite_paa.h"
 
 int
 main (
@@ -101,6 +103,8 @@ main (
    * Parse the command line for options and set the mme_config accordingly.
    */
   CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
+
+  CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*
    * Calling each layer init function
    */

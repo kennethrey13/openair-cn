@@ -110,7 +110,7 @@ pgw_load_pool_ip_addresses (
 
 int
 pgw_get_free_ipv4_paa_address (
-  struct in_addr *const addr_pP)
+  struct in_addr *const addr_pP, const char *imsi)
 {
   struct ipv4_list_elm_s        *ipv4_p = NULL;
 
@@ -120,9 +120,18 @@ pgw_get_free_ipv4_paa_address (
   }
 
   ipv4_p = STAILQ_FIRST (&pgw_app.ipv4_list_free);
+
+  imsi_t *im = (imsi_t *)imsi;
+  sprintf(ipv4_p->imsi, "%u%u%u%u%u%u%u%u%u%u%u%u%u%u%u",
+	im->u.num.digit1,im->u.num.digit2,im->u.num.digit3,im->u.num.digit4,im->u.num.digit5,
+	im->u.num.digit6,im->u.num.digit7,im->u.num.digit8,im->u.num.digit9,im->u.num.digit10,
+	im->u.num.digit11,im->u.num.digit12,im->u.num.digit13,im->u.num.digit14,im->u.num.digit15);
+
+  addr_pP->s_addr = ipv4_p->addr.s_addr;
+
   STAILQ_REMOVE (&pgw_app.ipv4_list_free, ipv4_p, ipv4_list_elm_s, ipv4_entries);
   STAILQ_INSERT_TAIL (&pgw_app.ipv4_list_allocated, ipv4_p, ipv4_entries);
-  addr_pP->s_addr = ipv4_p->addr.s_addr;
+
   return RETURNok;
 }
 
@@ -134,6 +143,8 @@ pgw_release_free_ipv4_paa_address (
 
   STAILQ_FOREACH (ipv4_p, &pgw_app.ipv4_list_allocated, ipv4_entries) {
     if (ipv4_p->addr.s_addr == addr_pP->s_addr) {
+      bzero(ipv4_p->imsi, 16);
+
       STAILQ_REMOVE (&pgw_app.ipv4_list_allocated, ipv4_p, ipv4_list_elm_s, ipv4_entries);
       STAILQ_INSERT_HEAD (&pgw_app.ipv4_list_free, ipv4_p, ipv4_entries);
       return RETURNok;
@@ -183,6 +194,23 @@ int get_paa_ipv4_pool(const int block, struct in_addr * const range_low, struct 
   return RETURNok;
 }
 
+int
+pgw_get_imsi_from_ipv4 (
+  struct in_addr * const addr_pP, char *imsi)
+{
+  struct ipv4_list_elm_s        *ipv4_p = NULL;
+
+  STAILQ_FOREACH (ipv4_p, &pgw_app.ipv4_list_allocated, ipv4_entries) {
+    if (ipv4_p->addr.s_addr == addr_pP->s_addr) {
+      strncpy(imsi, ipv4_p->imsi, 16);
+      return 0;
+    }
+  }
+  
+  /* getting here means that the IP address isn't allocated?!? */
+  bzero(imsi, 16);
+  return 2;
+}
 
 int get_paa_ipv4_pool_id(const struct in_addr ue_addr)
 {

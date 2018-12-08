@@ -29,18 +29,26 @@
 #define FILE_PGW_LITE_PAA_SEEN
 
 #include "common_types.h"
+#include "sgw_config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void pgw_load_pool_ip_addresses       (void);
-int pgw_get_free_ipv4_paa_address     (struct in_addr * const addr_P);
+int pgw_get_free_ipv4_paa_address     (struct in_addr * const addr_P, const char *imsi);
 int pgw_release_free_ipv4_paa_address (const struct in_addr * const addr_P);
+int pgw_get_imsi_from_ipv4		      (struct in_addr * const addr_P, char *imsi);
+
 int get_num_paa_ipv4_pool(void);
 int get_paa_ipv4_pool(const int block, struct in_addr * const range_low, struct in_addr * const range_high, struct in_addr * const netaddr, struct in_addr * const netmask, const struct ipv4_list_elm_s **out_of_nw);
 int get_paa_ipv4_pool_id(const struct in_addr ue_addr);
 
+// sgw_db_connector.c
+int spgw_mysql_connect (const sgw_config_t * sgw_config_p);
+void spgw_mysql_disconnect (void);
+int spgw_get_imsi_from_ip (struct in_addr *ip, char *imsi);
+int spgw_get_ip_from_imsi (struct in_addr *ip, const char *imsi);
 
 #ifdef __cplusplus
 }
