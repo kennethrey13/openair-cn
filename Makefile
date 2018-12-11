@@ -133,7 +133,7 @@ db: target
 		--depends 'mysql-server, mysql-client' \
 		--after-install ./package/db/postinst \
 		--after-remove ./package/db/postrm \
-		./package/db/sample_db.sql=/usr/local/etc/colte
+		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
 
 conf: target
 	fpm --input-type dir \
