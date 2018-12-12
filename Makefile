@@ -5,9 +5,7 @@ HSS_VERSION=0.9.10
 MME_VERSION=0.9.10
 SPGW_VERSION=0.9.10
 EPC_VERSION=0.9.10
-COLTE_VERSION=0.9.10
 DB_VERSION=0.9.10
-CONF_VERSION=0.9.10
 OAI_DEPS_VERSION=0.9.10
 TARGET_DIR=./BUILD/
 
@@ -19,6 +17,15 @@ target:
 	mkdir -p $(TARGET_DIR)
 
 hss: target
+	./oaienv; ./scripts/buid_hss -C
+
+mme: target
+	./oaienv; ./scripts/buid_mme -C
+
+spgw: target
+	./oaienv; ./scripts/buid_spgw -C
+
+hss_deb: target
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -41,7 +48,7 @@ hss: target
 		./package/hss/colte-hss.service=/etc/systemd/system/colte-hss.service \
 		./package/hss/freeDiameter=/usr/local/etc/oai/
 
-mme: target
+mme_deb: target
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -63,7 +70,7 @@ mme: target
 		./package/mme/colte-mme.service=/etc/systemd/system/colte-mme.service \
 		./package/mme/freeDiameter=/usr/local/etc/oai/
 
-spgw: target
+spgw_deb: target
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -98,25 +105,11 @@ epc: target
 		--name colte-epc \
 		--version $(EPC_VERSION) \
 		--package $(TARGET_DIR) \
-		--depends 'colte-hss, colte-mme, colte-spgw, colte-conf' \
+		--depends 'colte-hss, colte-mme, colte-spgw' \
 		--after-install ./package/epc/postinst \
 		--after-remove ./package/epc/postrm \
 		./package/epc/colte-epc.service=/etc/systemd/system/colte-epc.service \
 		./package/epc/oai=/usr/local/etc/colte/oai
-
-colte: target
-	fpm --input-type empty \
-		--output-type deb \
-		--force \
-		--vendor uw-ictd \
-		--maintainer sevilla@cs.washington.edu \
-		--description "The Community LTE Project" \
-		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
-		--name colte \
-		--version $(COLTE_VERSION) \
-		--package $(TARGET_DIR) \
-		--depends 'colte-epc (>= 0.9.3), colte-webservices, haulage'
 
 db: target
 	fpm --input-type dir \
@@ -135,28 +128,6 @@ db: target
 		--after-remove ./package/db/postrm \
 		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
 
-conf: target
-	fpm --input-type dir \
-		--output-type deb \
-		--force \
-		--vendor uw-ictd \
-		--config-files /usr/bin/colte/roles/configure/vars/main.yml \
-		--maintainer sevilla@cs.washington.edu \
-		--description "Configuration Tools for CoLTE" \
-		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
-		--name colte-conf \
-		--version $(CONF_VERSION) \
-		--package $(TARGET_DIR) \
-		--depends 'ansible, python-mysqldb, colte-db' \
-		--after-install ./package/conf/postinst \
-		--after-remove ./package/conf/postrm \
-		./package/conf/colteconf=/usr/bin/ \
-		./package/conf/coltedb=/usr/bin/ \
-		./package/conf/colte=/usr/bin/ \
-		./package/conf/colte-tcpdump.service=/etc/systemd/system/colte-tcpdump.service \
-		./package/conf/config.yml=/usr/local/etc/colte/config.yml
-
 oai-deps: target
 	fpm --input-type empty \
 		--output-type deb \
@@ -172,7 +143,7 @@ oai-deps: target
 		--after-install ./package/oai_deps/postinst \
 		--depends 'autoconf, automake, bison, build-essential, cmake, cmake-curses-gui, doxygen, doxygen-gui, flex, pkg-config, git, libconfig-dev, libgcrypt11-dev, libidn2-0-dev, libidn11-dev, default-libmysqlclient-dev, libpthread-stubs0-dev, libsctp1, libsctp-dev, libssl-dev, libtool, openssl, nettle-dev, nettle-bin, php, python-pexpect, castxml, guile-2.0-dev, libgmp-dev, libhogweed4, libgtk-3-dev, libxml2, libxml2-dev, mscgen, check, python, libgnutls28-dev, python-dev, unzip, libmnl-dev, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-asn1c, libevent-dev, ruby, ruby-dev, rubygems'
 
-all: hss mme spgw epc colte db conf oai-deps
+all: hss_deb mme_deb spgw_deb epc db oai-deps
 
 package-clean:
 	rm colte*\.deb
