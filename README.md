@@ -16,7 +16,7 @@ CoLTE (https://github.com/uw-ictd/colte.git) is the Community LTE Project: an al
 ## System Requirements
 We currently support Ubuntu 18.04 (Bionic) and Debian 9 (Stretch).
 
-## Quick Start: Apt-get
+## Quick Start: Use apt-get!
 We host debian packages of precompiled binaries of the EPC that correspond to tagged releases on here. If you just want to get started with the EPC, copy-paste the following code:
 ```
 echo "deb http://colte.cs.washington.edu $(lsb_release -sc) main" | sudo tee /etc/apt/sources/list.d/colte.list
@@ -26,22 +26,17 @@ apt-get install colte-epc
 ```
 
 ## Building the EPC
-Building the EPC can be broken down into three main parts: build requirements, OAI-specific libraries (freeDiameter, asn1c, libgtpnl, and liblfds), and the EPC itself. To quickly get the build requirements, use our repo above and then run `sudo apt-get install oai-deps`. To apt-get the build requirements yourself, use the following commands:
-```
-sudo apt-get install autoconf, automake, bison, build-essential, cmake, cmake-curses-gui, doxygen, doxygen-gui, flex, pkg-config, git, libconfig-dev, libgcrypt11-dev, libidn2-0-dev, libidn11-dev, default-libmysqlclient-dev, libpthread-stubs0-dev, libsctp1, libsctp-dev, libssl-dev, libtool, openssl, nettle-dev, nettle-bin, php, python-pexpect, castxml, guile-2.0-dev, libgmp-dev, libhogweed4, libgtk-3-dev, libxml2, libxml2-dev, mscgen, check, python, libgnutls28-dev, python-dev, unzip, libmnl-dev, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-asn1c, libevent-dev, ruby, ruby-dev, rubygems
-sudo gem install --no-ri --no-rdoc fpm
-```
+Building the EPC can be broken down into three main parts: build requirements, OAI-specific libraries (freeDiameter, asn1c, libgtpnl, and liblfds), and the EPC itself. To download all the build requirements, run `make build_deps`.
 
-Once you have the build requirements, you need to install four OAI specific libraries. You can get them from our repository with the following command:
+Once you have the build requirements, you need to install four OAI specific libraries before you can build the EPC. We provide them as pre-built debian packages in our repository; you can download them with the following command:
 ```
 sudo apt-get install colte-freediameter colte-asn1c colte-libgtpnl colte-liblfds
 ```
 Alternately, you can build and install these libraries yourself with the following commands:
 ```
-cd LIBRARIES
-make all
-make all_deb
+make libraries
+make libraries_deb
 sudo dpkg -i BUILD/*.deb
 ```
 
-Finally, you can build the three components of the EPC (HSS, MME, and SPGW) and package them into .deb files, along with some supporting packages, with `make all`. The output packages will appear in the `BUILD` directory.
+Finally, you can build the three components of the EPC (HSS, MME, and SPGW) and package them into .deb files, along with the supporting packages `colte-epc` and `colte-db`, with `make all`. Just as above, the output packages will appear in the `BUILD` directory.

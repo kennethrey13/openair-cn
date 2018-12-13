@@ -8,24 +8,31 @@ EPC_VERSION=0.9.10
 DB_VERSION=0.9.10
 OAI_DEPS_VERSION=0.9.10
 TARGET_DIR=./BUILD/
+LIB_DIR=./LIBRARIES/
 
-fpm:
-	sudo apt-get install ruby ruby-dev rubygems build-essential
+build_deps:
+	sudo apt-get install autoconf automake bison build-essential cmake cmake-curses-gui doxygen doxygen-gui flex pkg-config git libconfig-dev libgcrypt11-dev libidn2-0-dev libidn11-dev default-libmysqlclient-dev libpthread-stubs0-dev libsctp1 libsctp-dev libssl-dev libtool openssl nettle-dev nettle-bin php python-pexpect castxml guile-2.0-dev libgmp-dev libhogweed4 libgtk-3-dev libxml2 libxml2-dev mscgen check python libgnutls28-dev python-dev unzip libmnl-dev libevent-dev ruby ruby-dev rubygems
 	sudo gem install --no-ri --no-rdoc fpm
+
+libraries:
+	make -C $(LIB_DIR) all
+
+libraries_deb:
+	make -C $(LIB_DIR) all_deb
 
 target:
 	mkdir -p $(TARGET_DIR)
 
 hss: target
-	./oaienv; ./scripts/buid_hss -C
+	./oaienv; ./scripts/build_hss -C
 
 mme: target
-	./oaienv; ./scripts/buid_mme -C
+	./oaienv; ./scripts/build_mme -C
 
 spgw: target
-	./oaienv; ./scripts/buid_spgw -C
+	./oaienv; ./scripts/build_spgw -C
 
-hss_deb: target
+hss_deb: hss
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -48,7 +55,7 @@ hss_deb: target
 		./package/hss/colte-hss.service=/etc/systemd/system/colte-hss.service \
 		./package/hss/freeDiameter=/usr/local/etc/oai/
 
-mme_deb: target
+mme_deb: mme
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -70,7 +77,7 @@ mme_deb: target
 		./package/mme/colte-mme.service=/etc/systemd/system/colte-mme.service \
 		./package/mme/freeDiameter=/usr/local/etc/oai/
 
-spgw_deb: target
+spgw_deb: spgw
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -128,22 +135,7 @@ db: target
 		--after-remove ./package/db/postrm \
 		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
 
-oai-deps: target
-	fpm --input-type empty \
-		--output-type deb \
-		--force \
-		--vendor uw-ictd \
-		--maintainer sevilla@cs.washington.edu \
-		--description "All dependencies needed to build the OpenAirInterface EPC" \
-		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
-		--name oai-deps \
-		--version $(OAI_DEPS_VERSION) \
-		--package $(TARGET_DIR) \
-		--after-install ./package/oai_deps/postinst \
-		--depends 'autoconf, automake, bison, build-essential, cmake, cmake-curses-gui, doxygen, doxygen-gui, flex, pkg-config, git, libconfig-dev, libgcrypt11-dev, libidn2-0-dev, libidn11-dev, default-libmysqlclient-dev, libpthread-stubs0-dev, libsctp1, libsctp-dev, libssl-dev, libtool, openssl, nettle-dev, nettle-bin, php, python-pexpect, castxml, guile-2.0-dev, libgmp-dev, libhogweed4, libgtk-3-dev, libxml2, libxml2-dev, mscgen, check, python, libgnutls28-dev, python-dev, unzip, libmnl-dev, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-asn1c, libevent-dev, ruby, ruby-dev, rubygems'
-
-all: hss_deb mme_deb spgw_deb epc db oai-deps
+all: hss_deb mme_deb spgw_deb epc db
 
 package-clean:
 	rm colte*\.deb
