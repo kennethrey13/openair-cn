@@ -145,8 +145,9 @@ INSERT INTO `static_ips` VALUES
 DROP TABLE IF EXISTS `customers`;
 CREATE TABLE `customers` (
   `imsi` varchar(16) NOT NULL,
-  `raw_down` int(10) unsigned DEFAULT '0',
-  `raw_up` int(10) unsigned DEFAULT '0',
+  `username` varchar(50) DEFAULT NULL,
+  `raw_down` bigint(15) unsigned DEFAULT '0',
+  `raw_up` bigint(15) unsigned DEFAULT '0',
   `data_balance` bigint(15) DEFAULT '10000000',
   `balance` decimal(13,4) DEFAULT '0' COMMENT 'this value is currency-less',
   `bridged` tinyint(1) DEFAULT '1',
