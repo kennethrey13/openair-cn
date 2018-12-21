@@ -19,20 +19,24 @@ We currently support Ubuntu 18.04 (Bionic) and Debian 9 (Stretch).
 ## Quick Start: Use apt-get!
 We host debian packages of precompiled binaries of the EPC that correspond to tagged releases on here. If you just want to get started with the EPC, copy-paste the following code:
 ```
-echo "deb http://colte.cs.washington.edu $(lsb_release -sc) main" | sudo tee /etc/apt/sources/list.d/colte.list
+echo "deb http://colte.cs.washington.edu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/colte.list
 sudo wget -O /etc/apt/trusted.gpg.d/colte.gpg http://colte.cs.washington.edu/keyring.gpg
 sudo apt-get update
-apt-get install colte-epc
+sudo apt-get install colte-epc
 ```
 
 ## Building the EPC
-Building the EPC can be broken down into three main parts: build requirements, OAI-specific libraries (freeDiameter, asn1c, libgtpnl, and liblfds), and the EPC itself. To download all the build requirements, run `make build_deps`.
+Building the EPC can be broken down into three main parts: build requirements, OAI-specific libraries (freeDiameter, asn1c, libgtpnl, and liblfds), and the EPC itself. To download all the build requirements, clone this repository and run `make build_deps` from the top level directory.
 
-Once you have the build requirements, you need to install four OAI specific libraries before you can build the EPC. We provide them as pre-built debian packages in our repository; you can download them with the following command:
+Once you have the build requirements, you need to install four OAI specific libraries before you can build the EPC. We provide these as pre-built debian packages in our repository; you can download them with the following commands:
 ```
+echo "deb http://colte.cs.washington.edu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/colte.list
+sudo wget -O /etc/apt/trusted.gpg.d/colte.gpg http://colte.cs.washington.edu/keyring.gpg
+sudo apt-get update
 sudo apt-get install colte-freediameter colte-asn1c colte-libgtpnl colte-liblfds
 ```
-Alternately, you can build and install these libraries yourself with the following commands:
+
+Alternately, you can build and install the libraries yourself with the following commands:
 ```
 make libraries
 make libraries_deb
