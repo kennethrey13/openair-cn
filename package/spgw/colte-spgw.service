@@ -2,6 +2,7 @@
 Description=CoLTE SPGW
 After=network.target
 Requires=network.target
+Wants=colte-spgw_nat.service
 PartOf=colte-epc.service colte-mme.service
 
 [Service]
