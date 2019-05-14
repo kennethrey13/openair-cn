@@ -43,7 +43,7 @@ epc: hss mme spgw
 		--config-files /usr/local/etc/oai/freeDiameter/mme_fd.conf \
 		--maintainer sevilla@cs.washington.edu \
 		--description "The OpenAirInterface EPC" \
-		--url "https://github.com/uw-ictd/colte" \
+		--url "https://github.com/uw-ictd/openair-cn" \
 		--deb-compression xz \
 		--name colte-epc \
 		--version $(EPC_VERSION) \
