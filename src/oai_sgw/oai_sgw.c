@@ -76,6 +76,7 @@
 
 #include "pgw_ue_ip_address_alloc.h"
 #include "pgw_lite_paa.h"
+#include "spgw_radius.h"
 
 int
 main (
@@ -141,21 +142,32 @@ main (
    */
   CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
 
-  CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
+  // CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*
    * Calling each layer init function
    */
 
-  MSC_INIT (MSC_SP_GW, THREAD_MAX + TASK_MAX);
-  CHECK_INIT_RETURN (udp_init ());
-  CHECK_INIT_RETURN (s11_sgw_init (&spgw_config.sgw_config));
-  //CHECK_INIT_RETURN (gtpv1u_init (&spgw_config));
-  CHECK_INIT_RETURN (sgw_init (&spgw_config));
+  // MSC_INIT (MSC_SP_GW, THREAD_MAX + TASK_MAX);
+  // CHECK_INIT_RETURN (udp_init ());
+  // CHECK_INIT_RETURN (s11_sgw_init (&spgw_config.sgw_config));
+  // //CHECK_INIT_RETURN (gtpv1u_init (&spgw_config));
+  // CHECK_INIT_RETURN (sgw_init (&spgw_config));
+
+  printf("Initializing spgw_radius\n");
+  if (spgw_radius_configure() == 0) {
+    printf("Configured, running spgw_radius test\n");
+  } else {
+	  printf("Failed to configure\n");
+  }
+
+  spgw_radius_test_main();
+  printf("Completed spgw_radius init\n");
+
   /*
    * Handle signals here
    */
-  itti_wait_tasks_end ();
-  pid_file_unlock();
-  free_wrapper((void**) &pid_file_name);
+  // itti_wait_tasks_end ();
+  // pid_file_unlock();
+  // free_wrapper((void**) &pid_file_name);
   return 0;
 }

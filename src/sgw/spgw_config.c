@@ -205,6 +205,7 @@ int spgw_config_parse_opt_line (
     spgw_config_p->pgw_config.config_file = bfromcstr("/usr/local/etc/oai/spgw.conf");
     spgw_config_p->sgw_config.config_file = bfromcstr("/usr/local/etc/oai/spgw.conf");
   }
+
   if (spgw_config_parse_file (spgw_config_p) != 0) {
     return RETURNerror;
   }

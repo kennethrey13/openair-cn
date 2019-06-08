@@ -8,7 +8,7 @@ TARGET_DIR=./BUILD/
 LIB_DIR=./LIBRARIES/
 
 build_deps:
-	sudo apt-get install autoconf automake bison build-essential cmake cmake-curses-gui doxygen doxygen-gui flex pkg-config git libconfig-dev libgcrypt11-dev libidn2-0-dev libidn11-dev default-libmysqlclient-dev libpthread-stubs0-dev libsctp1 libsctp-dev libssl-dev libtool openssl nettle-dev nettle-bin php python-pexpect castxml guile-2.0-dev libgmp-dev libhogweed4 libgtk-3-dev libxml2 libxml2-dev mscgen check python libgnutls28-dev python-dev unzip libmnl-dev libevent-dev ruby ruby-dev rubygems
+	sudo apt-get install autoconf automake bison build-essential cmake cmake-curses-gui doxygen doxygen-gui flex pkg-config git libconfig-dev libgcrypt11-dev libidn2-0-dev libidn11-dev default-libmysqlclient-dev libpthread-stubs0-dev libsctp1 libsctp-dev libssl-dev libtool openssl nettle-dev nettle-bin php python-pexpect castxml guile-2.0-dev libgmp-dev libhogweed4 libgtk-3-dev libxml2 libxml2-dev mscgen check python libgnutls28-dev python-dev unzip libmnl-dev libevent-dev ruby ruby-dev rubygems libradcli-dev
 	sudo gem install --no-ri --no-rdoc fpm
 
 libraries:

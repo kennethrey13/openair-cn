@@ -568,6 +568,7 @@ add_library (SGW
   ${SGW_DIR}/sgw_task.c
   ${SGW_DIR}/spgw_config.c
   ${SGW_DIR}/sgw_db_connector.c
+  ${SGW_DIR}/spgw_radius.c
   )
 
 set(MME_DIR ${OPENAIRCN_DIR}/src/mme_app)
@@ -900,7 +901,7 @@ add_executable(spgw
   )
 target_link_libraries (spgw
   -Wl,--start-group
-  GTPV1U SGW S11_SGW GTPV2C UDP_SERVER ${MSC_LIB} ${ITTI_LIB} ${3GPP_TYPES_LIB} CN_UTILS HASHTABLE BSTR ${MySQL_LIBRARY}
+  GTPV1U SGW S11_SGW GTPV2C UDP_SERVER ${MSC_LIB} ${ITTI_LIB} ${3GPP_TYPES_LIB} CN_UTILS HASHTABLE BSTR ${MySQL_LIBRARY} radcli
   -Wl,--end-group
   pthread m rt gtpnl ${LFDS} ${CONFIG_LIBRARIES}  
   )
