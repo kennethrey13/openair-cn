@@ -135,12 +135,12 @@ main (
 #endif
 
 
-  CHECK_INIT_RETURN (itti_init (TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info, NULL, NULL));
-  CHECK_INIT_RETURN (async_system_init());
-  /*
-   * Parse the command line for options and set the mme_config accordingly.
-   */
-  CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
+  // CHECK_INIT_RETURN (itti_init (TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info, NULL, NULL));
+  // CHECK_INIT_RETURN (async_system_init());
+  // /*
+  //  * Parse the command line for options and set the mme_config accordingly.
+  //  */
+  // CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
 
   // CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*
@@ -166,8 +166,8 @@ main (
   /*
    * Handle signals here
    */
-  // itti_wait_tasks_end ();
-  // pid_file_unlock();
-  // free_wrapper((void**) &pid_file_name);
+  itti_wait_tasks_end ();
+  pid_file_unlock();
+  free_wrapper((void**) &pid_file_name);
   return 0;
 }

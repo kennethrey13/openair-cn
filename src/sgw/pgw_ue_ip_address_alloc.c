@@ -36,8 +36,13 @@
 int allocate_ue_ipv4_address(const char *imsi, struct in_addr *addr) {
   // Call PGW IP Address allocator 
 
-  // return pgw_get_free_ipv4_paa_address (addr, imsi); 
-  return spgw_get_ip_from_imsi(addr, imsi);
+  // return pgw_get_free_ipv4_paa_address (addr, imsi);
+
+  // return spgw_get_ip_from_imsi(addr, imsi);
+
+  // TODO: Add logic for using ipv4 pool
+
+  return spgw_radius_request_ipv4_address(imsi, addr);
 }
 
 int release_ue_ipv4_address(const char *imsi, struct in_addr *addr) {

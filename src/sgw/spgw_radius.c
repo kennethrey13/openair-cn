@@ -54,37 +54,39 @@ int spgw_radius_test_connection()
   }
 
   spgw_radius_debug_print("spgw_radius_test_connection: attempting connection\n");
-	int result;
-	VALUE_PAIR *send = NULL, *received = NULL;
-	uint32_t service = PW_AUTHENTICATE_ONLY;
+  int result;
+  VALUE_PAIR *send = NULL, *received = NULL;
+  uint32_t service = PW_AUTHENTICATE_ONLY;
 
-  // Fill in attribute details
-  if (spgw_radius_add_attribute(&send, PW_USER_NAME, SPGW_RADIUS_AUTH_USERNAME)) {
-    spgw_radius_connected = false;
-    spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add username attibute\n");
-    return -1;
-  }
-  if (spgw_radius_add_attribute(&send, PW_USER_PASSWORD, SPGW_RADIUS_AUTH_PASSWORD)) {
-    spgw_radius_connected = false;
-    spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add password attibute\n");
-    return -1;
-  }
+  // *** Password not currently used ***
+  // if (spgw_radius_add_attribute(&send, PW_USER_NAME, SPGW_RADIUS_AUTH_USERNAME)) {
+  //   spgw_radius_connected = false;
+  //   spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add username attibute\n");
+  //   return -1;
+  // }
+  // if (spgw_radius_add_attribute(&send, PW_USER_PASSWORD, SPGW_RADIUS_AUTH_PASSWORD)) {
+  //   spgw_radius_connected = false;
+  //   spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add password attibute\n");
+  //   return -1;
+  // }
   if (spgw_radius_add_attribute(&send, PW_SERVICE_TYPE, &service)) {
     spgw_radius_connected = false;
+    rc_avpair_free(send);
     spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add service attibute\n");
     return -1;
   }
 
   // Attempt connection via simple authentication message
   pthread_rwlock_rdlock(&spgw_radius_lock);
-	result = rc_auth(spgw_radius_rh, SPGW_RADIUS_CLIENT_PORT, send, &received, NULL);
+  result = rc_auth(spgw_radius_rh, SPGW_RADIUS_CLIENT_PORT, send, &received, NULL);
   pthread_rwlock_unlock(&spgw_radius_lock);
 
   // Response doesn't matter, only need contact
   rc_avpair_free(send);
   rc_avpair_free(received);
 
-	if (result == OK_RC) {
+  // Check for any server contact
+  if (result == OK_RC || result == REJECT_RC) {
     spgw_radius_debug_print("spgw_radius_test_connection: connection success\n");
     spgw_radius_connected = true;
     return 0;
@@ -118,14 +120,14 @@ VALUE_PAIR *spgw_radius_send_message(VALUE_PAIR *send)
 
   spgw_radius_message_print(send, "sent");
 
-	int result;
-	VALUE_PAIR *received = NULL;
+  int result;
+  VALUE_PAIR *received = NULL;
 
   // Send Message
-	result = rc_auth(spgw_radius_rh, SPGW_RADIUS_CLIENT_PORT, send, &received, NULL);
+  result = rc_auth(spgw_radius_rh, SPGW_RADIUS_CLIENT_PORT, send, &received, NULL);
   pthread_rwlock_unlock(&spgw_radius_lock);
 
-	if (result == OK_RC) {
+  if (result == OK_RC) {
     spgw_radius_debug_print("spgw_radius_send_message: message success\n");
     spgw_radius_message_print(received, "received");
     return received;
@@ -138,43 +140,56 @@ VALUE_PAIR *spgw_radius_send_message(VALUE_PAIR *send)
 }
 
 
-int spgw_radius_handle_ipv4_address(const char *imsi, struct in_addr *addr, void *type)
+int spgw_radius_handle_ipv4_address(const char *imsi, struct in_addr *addr)
 {
   VALUE_PAIR *send = NULL;
 
-  // Fill in attribute details
-  if (spgw_radius_add_attribute(&send, PW_USER_NAME, SPGW_RADIUS_AUTH_USERNAME)) {
-    spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add username attibute\n");
-    return -1;
-  }
-  if (spgw_radius_add_attribute(&send, PW_USER_PASSWORD, SPGW_RADIUS_AUTH_PASSWORD)) {
-    spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add password attibute\n");
-    return -1;
-  }
-  if (spgw_radius_add_attribute(&send, PW_SERVICE_TYPE, type)) {
-    spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add service attibute\n");
-    return -1;
-  }
-  if (spgw_radius_add_attribute(&send, PW_FILTER_ID, imsi)) {
+  // *** Password not currently used ***
+  // if (spgw_radius_add_attribute(&send, PW_USER_NAME, SPGW_RADIUS_AUTH_USERNAME)) {
+  //   spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add username attibute\n");
+  //   return -1;
+  // }
+  // if (spgw_radius_add_attribute(&send, PW_USER_PASSWORD, SPGW_RADIUS_AUTH_PASSWORD)) {
+  //   spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add password attibute\n");
+  //   return -1;
+  // }
+
+  if (spgw_radius_add_attribute(&send, PW_USER_NAME, imsi)) {
     spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to add id attibute\n");
     return -1;
   }
 
   VALUE_PAIR *received = spgw_radius_send_message(send);
 
-  // TODO: Add handler for addr
+  int res = 0;
+
+  // Look for proper response attribute
+  VALUE_PAIR *response = rc_avpair_get(received, SPGW_RADIUS_IPV4_RESPONSE_TYPE, 0);
+  if (response != NULL) {
+    if (rc_avpair_get_uint32(response, &(addr->s_addr)) < 0) {
+      res = -1;
+      spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to extract response\n");
+    }
+
+    // Response recieved
+    spgw_radius_debug_print("spgw_radius_handle_ipv4_address: ip address received\n");
+
+  } else {
+    res = -1;
+    spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - no response received\n");
+  }
 
   rc_avpair_free(send);
   rc_avpair_free(received);
-  return 0;
+  return res;
 }
 
 
 int spgw_radius_request_ipv4_address(const char *imsi, struct in_addr *addr)
 {
-	uint32_t service = SPGW_RADIUS_IPV4_REQUEST_TYPE;
-  if (spgw_radius_handle_ipv4_address(imsi, addr, &service) < 0) {
+  if (spgw_radius_handle_ipv4_address(imsi, addr) < 0) {
     spgw_radius_error_print("spgw_radius_request_ipv4_address: ERROR - failed to send message\n");
+    return -1;
   }
   return 0;
 }
@@ -182,15 +197,15 @@ int spgw_radius_request_ipv4_address(const char *imsi, struct in_addr *addr)
 
 int spgw_radius_release_ipv4_address(const char *imsi, struct in_addr *addr)
 {
-	uint32_t service = SPGW_RADIUS_IPV4_RELEASE_TYPE;
-  if (spgw_radius_handle_ipv4_address(imsi, addr, &service) < 0) {
-    spgw_radius_error_print("spgw_radius_release_ipv4_address: ERROR - failed to send message\n");
-  }
+  // *** Release not currently used ***
+  // if (spgw_radius_handle_ipv4_address(imsi, addr) < 0) {
+  //   spgw_radius_error_print("spgw_radius_release_ipv4_address: ERROR - failed to send message\n");
+  // }
   return 0;
 }
 
 
-void spgw_radius_clean()
+void spgw_radius_clean(void)
 {
   // Get write lock to ensure no new messages are sent
   pthread_rwlock_wrlock(&spgw_radius_lock);
@@ -209,7 +224,7 @@ void spgw_radius_clean()
 }
 
 
-int spgw_radius_configure()
+int spgw_radius_configure(void)
 {
   // Do nothing if already configured
   if (spgw_radius_is_configured()) {
@@ -219,9 +234,9 @@ int spgw_radius_configure()
 
   // Initial configs here
   if (!spgw_radius_initial_config) {
-		spgw_radius_debug_print("spgw_radius_configure: performing initial config\n");
+    spgw_radius_debug_print("spgw_radius_configure: performing initial config\n");
     if(pthread_rwlock_init(&spgw_radius_lock, NULL) != 0) {
-		  spgw_radius_error_print("spgw_radius_configure: ERROR - failed to initialize lock\n");
+      spgw_radius_error_print("spgw_radius_configure: ERROR - failed to initialize lock\n");
       return -1;
     } else {
       spgw_radius_debug_print("spgw_radius_configure: lock Initialized\n");
@@ -235,7 +250,7 @@ int spgw_radius_configure()
   
   // Read in defaults from config file
   if ((spgw_radius_rh = rc_read_config(SPGW_RADIUS_CONFIG_FILE)) == NULL) {
-		spgw_radius_error_print("spgw_radius_configure: ERROR - unable to read in config file\n");
+    spgw_radius_error_print("spgw_radius_configure: ERROR - unable to read in config file\n");
     pthread_rwlock_unlock(&spgw_radius_lock);
     return -1;
   }
@@ -247,13 +262,13 @@ int spgw_radius_configure()
 }
 
 
-bool spgw_radius_is_configured()
+bool spgw_radius_is_configured(void)
 {
   return spgw_radius_configured;
 }
 
 
-bool spgw_radius_is_connected()
+bool spgw_radius_is_connected(void)
 {
   return spgw_radius_connected;
 }
@@ -314,13 +329,11 @@ void *spgw_radius_test_send(void *args) {
           spgw_radius_configure();
         }
 
-        if (i % 2 == 0) {
-          spgw_radius_request_ipv4_address(message, NULL);
-        } else {
-          spgw_radius_release_ipv4_address(message, NULL);
-        }
+        struct in_addr addr;
+        spgw_radius_request_ipv4_address(message, &addr);
+
         // Delay 0-3 seconds
-        sleep((thread_id % 4));
+        sleep(((thread_id+i) % 4));
       }
     } else {
       printf("spgw_radius_test_send: failed to connect\n");
@@ -337,7 +350,7 @@ void *spgw_radius_test_send(void *args) {
 }
 
 
-int spgw_radius_test_main()
+int spgw_radius_test_main(void)
 {
   setvbuf(stdout, NULL, _IONBF, 0); // Disable buffering
   printf("spgw_radius_test_main: starting program\n");
@@ -345,8 +358,6 @@ int spgw_radius_test_main()
   // Initial config
   spgw_radius_configure();
   spgw_radius_test_connection();
-  spgw_radius_request_ipv4_address("message test", NULL);
-  spgw_radius_release_ipv4_address("message test", NULL);
 
   int num_threads = 50;
   printf("spgw_radius_test_main: creating %d threads\n", num_threads);
