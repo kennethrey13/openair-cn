@@ -1,8 +1,9 @@
-/*
- * Author: Nick Durand
- */
-
 // radcli reference guide: http://radcli.github.io/radcli/manual/group__radcli-api.html
+/* TODO:
+- Add config options in spgw_config.h
+- Find a better way to edit radiusclient.conf
+- Test with a working haulage
+*/
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -11,18 +12,23 @@
 #include <string.h>
 #include <radcli/radcli.h>
 
+#include "spgw_config.h"
+
 #ifndef SPGW_RADIUS_H_
 #define SPGW_RADIUS_H_
 
 #define SPGW_RADIUS_CONFIG_FILE "/etc/radcli/radiusclient.conf"
 /* The following settings should be used for the conf file:
+  authserver has the format <address>:<port>:<secret>
 
+  ---
   authserver 	localhost:1812:spgw_radius_secret
   acctserver 	localhost
   dictionary 	/etc/radcli/dictionary
   default_realm
   radius_timeout 2
   radius_retries 1
+  ---
 
 */
 
@@ -52,10 +58,10 @@
  * - After first config call, any thread can call config safely
  * 
  * To build and send a message:
- * - Start by calling add_attribute with a null value for *send
+ * - Start by calling add_attribute with a null value for VALUE_PAIR *send
  * - Continue using add_attribute until all attributes are added
- * - Use send_message, which blocks until a reply is back
- * - Reply is a linked list, use message_print as an example
+ * - Use send_message, which blocks until a VALUE_PAIR reply is back
+ * - Use functions (see handle_ipv4_address) to get result
  */
 
 // Adds an attribute to a provided message (or creates one if *send is NULL)
@@ -92,7 +98,7 @@ void spgw_radius_clean(void);
 // Configures the radius client with default configurations
 // Allows messages to be sent until clean is called
 // Does nothing if already configured (until clean is called)
-int spgw_radius_configure(void);
+int spgw_radius_configure(spgw_config_t *spgw_conf);
 
 // Returns the configuration status
 bool spgw_radius_is_configured(void);

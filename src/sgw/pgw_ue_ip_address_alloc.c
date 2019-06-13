@@ -34,15 +34,17 @@
 #include "pgw_lite_paa.h"
 
 int allocate_ue_ipv4_address(const char *imsi, struct in_addr *addr) {
-  // Call PGW IP Address allocator 
 
-  // return pgw_get_free_ipv4_paa_address (addr, imsi);
+  if (spgw_radius_is_connected()) {
+    return spgw_radius_request_ipv4_address(imsi, addr);
 
-  // return spgw_get_ip_from_imsi(addr, imsi);
+  // TODO: Add configuration
+  } // else if (spgw_radius_use_ipv4_pool) {
+    // return pgw_get_free_ipv4_paa_address (addr, imsi);
+  // }
 
-  // TODO: Add logic for using ipv4 pool
-
-  return spgw_radius_request_ipv4_address(imsi, addr);
+  // Not conn
+  return -1;
 }
 
 int release_ue_ipv4_address(const char *imsi, struct in_addr *addr) {

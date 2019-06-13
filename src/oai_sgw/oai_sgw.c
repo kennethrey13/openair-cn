@@ -137,15 +137,22 @@ main (
 
   // CHECK_INIT_RETURN (itti_init (TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info, NULL, NULL));
   // CHECK_INIT_RETURN (async_system_init());
-  // /*
-  //  * Parse the command line for options and set the mme_config accordingly.
-  //  */
-  // CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
+  /*
+   * Parse the command line for options and set the mme_config accordingly.
+   */
+  CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
 
   // CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*
    * Calling each layer init function
    */
+
+  if (spgw_radius_configure(&spgw_config) == 0) {
+    spgw_radius_test_connection();
+  }
+
+  // DEBUG
+  spgw_radius_test_main();
 
   // MSC_INIT (MSC_SP_GW, THREAD_MAX + TASK_MAX);
   // CHECK_INIT_RETURN (udp_init ());
@@ -153,21 +160,11 @@ main (
   // //CHECK_INIT_RETURN (gtpv1u_init (&spgw_config));
   // CHECK_INIT_RETURN (sgw_init (&spgw_config));
 
-  printf("Initializing spgw_radius\n");
-  if (spgw_radius_configure() == 0) {
-    printf("Configured, running spgw_radius test\n");
-  } else {
-	  printf("Failed to configure\n");
-  }
-
-  spgw_radius_test_main();
-  printf("Completed spgw_radius init\n");
-
-  /*
-   * Handle signals here
-   */
-  itti_wait_tasks_end ();
-  pid_file_unlock();
-  free_wrapper((void**) &pid_file_name);
+  // /*
+  //  * Handle signals here
+  //  */
+  // itti_wait_tasks_end ();
+  // pid_file_unlock();
+  // free_wrapper((void**) &pid_file_name);
   return 0;
 }

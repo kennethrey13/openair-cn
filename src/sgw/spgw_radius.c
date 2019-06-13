@@ -10,6 +10,7 @@
 #include <radcli/radcli.h>
 
 #include "spgw_radius.h"
+#include "spgw_config.h"
 
 /**** Local State Variables ****/
 
@@ -69,6 +70,7 @@ int spgw_radius_test_connection()
   //   spgw_radius_error_print("spgw_radius_test_connection: ERROR - failed to add password attibute\n");
   //   return -1;
   // }
+
   if (spgw_radius_add_attribute(&send, PW_SERVICE_TYPE, &service)) {
     spgw_radius_connected = false;
     rc_avpair_free(send);
@@ -166,6 +168,8 @@ int spgw_radius_handle_ipv4_address(const char *imsi, struct in_addr *addr)
   // Look for proper response attribute
   VALUE_PAIR *response = rc_avpair_get(received, SPGW_RADIUS_IPV4_RESPONSE_TYPE, 0);
   if (response != NULL) {
+
+    // Store the value
     if (rc_avpair_get_uint32(response, &(addr->s_addr)) < 0) {
       res = -1;
       spgw_radius_error_print("spgw_radius_handle_ipv4_address: ERROR - failed to extract response\n");
@@ -224,7 +228,7 @@ void spgw_radius_clean(void)
 }
 
 
-int spgw_radius_configure(void)
+int spgw_radius_configure(spgw_config_t *spgw_conf)
 {
   // Do nothing if already configured
   if (spgw_radius_is_configured()) {
@@ -242,6 +246,11 @@ int spgw_radius_configure(void)
       spgw_radius_debug_print("spgw_radius_configure: lock Initialized\n");
     }
     spgw_radius_initial_config = true;
+
+    // TODO: Add values to 
+    if (spgw_conf != NULL) {
+
+    }
   }
 
   // Write lock to ensure no message sent with bad configuration
@@ -317,23 +326,26 @@ void *spgw_radius_test_send(void *args) {
   char message[20];
   long thread_id = (long) args;
   snprintf(message, 20, "Message(%ld)", thread_id);
-  if (spgw_radius_configure() == 0) {
+  if (spgw_radius_configure(NULL) == 0) {
     if (spgw_radius_test_connection() == 0) {
 
       // Send 2-4 messages
       for (int i = 0; i < (thread_id % 3) + 2; i++) {
         // Test multiple clears and configures in between messages
-        if ((long) args % 5 == 0 && i < 2) {
-          spgw_radius_clean();
-        } else if ((long) args % 10 == 1) {
-          spgw_radius_configure();
-        }
+        // if ((long) args % 5 == 0 && i < 2) {
+        //   spgw_radius_clean();
+        // } else if ((long) args % 10 == 1) {
+        //   spgw_radius_configure(NULL);
+        // }
 
         struct in_addr addr;
+        addr->s_addr = 0;
         spgw_radius_request_ipv4_address(message, &addr);
 
         // Delay 0-3 seconds
         sleep(((thread_id+i) % 4));
+
+        printf("Value after message: %d\n", addr->s_addr);
       }
     } else {
       printf("spgw_radius_test_send: failed to connect\n");
@@ -356,10 +368,10 @@ int spgw_radius_test_main(void)
   printf("spgw_radius_test_main: starting program\n");
 
   // Initial config
-  spgw_radius_configure();
+  spgw_radius_configure(NULL);
   spgw_radius_test_connection();
 
-  int num_threads = 50;
+  int num_threads = 1;
   printf("spgw_radius_test_main: creating %d threads\n", num_threads);
 
   pthread_t threads[num_threads];
