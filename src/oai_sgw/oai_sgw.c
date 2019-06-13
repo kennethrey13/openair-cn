@@ -140,7 +140,7 @@ main (
   /*
    * Parse the command line for options and set the mme_config accordingly.
    */
-  CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
+  // CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
 
   // CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*

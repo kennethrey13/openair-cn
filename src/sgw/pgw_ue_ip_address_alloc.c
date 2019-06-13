@@ -31,7 +31,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <netinet/in.h>
+
 #include "pgw_lite_paa.h"
+#include "spgw_radius.h"
 
 int allocate_ue_ipv4_address(const char *imsi, struct in_addr *addr) {
 

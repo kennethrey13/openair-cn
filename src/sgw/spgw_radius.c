@@ -339,13 +339,13 @@ void *spgw_radius_test_send(void *args) {
         // }
 
         struct in_addr addr;
-        addr->s_addr = 0;
+        addr.s_addr = 0;
         spgw_radius_request_ipv4_address(message, &addr);
 
         // Delay 0-3 seconds
         sleep(((thread_id+i) % 4));
 
-        printf("Value after message: %d\n", addr->s_addr);
+        printf("Value after message: %d\n", addr.s_addr);
       }
     } else {
       printf("spgw_radius_test_send: failed to connect\n");
