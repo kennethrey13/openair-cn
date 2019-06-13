@@ -69,8 +69,9 @@
 int spgw_radius_add_attribute(VALUE_PAIR **send, rc_attr_id type, const void *content);
 
 // Tests if a connection can be established using simple message
+// Works with ANY response, including a reject
 // Sets spgw_radius_connection, which can be used to check status
-//   of most recent connection
+//   of most recent connection (use spgw_radius_connected() to check)
 // Returns 0 on success, -1 on failure
 int spgw_radius_test_connection(void);
 

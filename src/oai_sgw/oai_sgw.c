@@ -135,36 +135,38 @@ main (
 #endif
 
 
-  // CHECK_INIT_RETURN (itti_init (TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info, NULL, NULL));
-  // CHECK_INIT_RETURN (async_system_init());
+  CHECK_INIT_RETURN (itti_init (TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info, NULL, NULL));
+  CHECK_INIT_RETURN (async_system_init());
   /*
    * Parse the command line for options and set the mme_config accordingly.
    */
-  // CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
+  CHECK_INIT_RETURN (spgw_config_parse_opt_line (argc, argv, &spgw_config));
 
   // CHECK_INIT_RETURN (spgw_mysql_connect(&spgw_config));
   /*
    * Calling each layer init function
    */
 
+  // Attempt to configure
   if (spgw_radius_configure(&spgw_config) == 0) {
+    // If configure worked, attempt a connection
     spgw_radius_test_connection();
   }
 
-  // DEBUG
-  spgw_radius_test_main();
+  // For sending debug messages, uncomment line
+  // spgw_radius_test_main();
 
-  // MSC_INIT (MSC_SP_GW, THREAD_MAX + TASK_MAX);
-  // CHECK_INIT_RETURN (udp_init ());
-  // CHECK_INIT_RETURN (s11_sgw_init (&spgw_config.sgw_config));
-  // //CHECK_INIT_RETURN (gtpv1u_init (&spgw_config));
-  // CHECK_INIT_RETURN (sgw_init (&spgw_config));
+  MSC_INIT (MSC_SP_GW, THREAD_MAX + TASK_MAX);
+  CHECK_INIT_RETURN (udp_init ());
+  CHECK_INIT_RETURN (s11_sgw_init (&spgw_config.sgw_config));
+  //CHECK_INIT_RETURN (gtpv1u_init (&spgw_config));
+  CHECK_INIT_RETURN (sgw_init (&spgw_config));
 
-  // /*
-  //  * Handle signals here
-  //  */
-  // itti_wait_tasks_end ();
-  // pid_file_unlock();
-  // free_wrapper((void**) &pid_file_name);
+  /*
+   * Handle signals here
+   */
+  itti_wait_tasks_end ();
+  pid_file_unlock();
+  free_wrapper((void**) &pid_file_name);
   return 0;
 }

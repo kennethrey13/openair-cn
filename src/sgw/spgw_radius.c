@@ -279,7 +279,7 @@ bool spgw_radius_is_configured(void)
 
 bool spgw_radius_is_connected(void)
 {
-  return spgw_radius_connected;
+  return spgw_radius_connected && spgw_radius_configured;
 }
 
 
