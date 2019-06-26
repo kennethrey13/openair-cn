@@ -45,7 +45,7 @@
 #endif /* CMSG_BUF_LEN */
 
 /* Use old draft-ietf-tsvwg-sctpsocket-17 API ? If not defined, RFC6458 API will be used */
-/* #define OLD_SCTP_SOCKET_API */
+#define OLD_SCTP_SOCKET_API
 
 /* Automatically fallback to old API if some of the new symbols are not defined */
 #if (!defined(SCTP_CONNECTX_4_ARGS) || (!defined(SCTP_RECVRCVINFO)) || (!defined(SCTP_SNDINFO))) 
