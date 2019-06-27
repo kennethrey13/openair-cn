@@ -2,8 +2,7 @@
 USER_EMAIL=$(shell git config --get user.email)
 
 EPC_VERSION=0.10.0
-DB_VERSION=0.9.11
-OAI_DEPS_VERSION=0.9.10
+DB_VERSION=0.9.12
 TARGET_DIR=./BUILD/
 LIB_DIR=./LIBRARIES/
 
@@ -76,7 +75,7 @@ db: target
 		--name colte-db \
 		--version $(DB_VERSION) \
 		--package $(TARGET_DIR) \
-		--depends 'mysql-server, mysql-client' \
+		--depends 'default-mysql-server, default-mysql-client' \
 		--after-install ./package/db/postinst \
 		--after-remove ./package/db/postrm \
 		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
