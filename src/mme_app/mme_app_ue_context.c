@@ -44,6 +44,7 @@
 #include "3gpp_24.007.h"
 #include "3gpp_24.008.h"
 #include "3gpp_29.274.h"
+#include "3gpp_24.301.h"
 #include "mme_app_ue_context.h"
 #include "mme_app_bearer_context.h"
 
@@ -266,6 +267,34 @@ void mme_app_ue_context_s1_release_enb_informations(ue_context_t *ue_context)
   OAILOG_FUNC_OUT(LOG_MME_APP);
 }
 
+//------------------------------------------------------------------------------
+ambr_t mme_app_total_p_gw_apn_ambr(ue_context_t *ue_context){
+  pdn_context_t * registered_pdn_ctx = NULL;
+  ambr_t apn_ambr_sum= {0, 0};
+  RB_FOREACH (registered_pdn_ctx, PdnContexts, &ue_context->pdn_contexts) {
+    DevAssert(registered_pdn_ctx);
+    apn_ambr_sum.br_dl += registered_pdn_ctx->subscribed_apn_ambr.br_dl;
+    apn_ambr_sum.br_ul += registered_pdn_ctx->subscribed_apn_ambr.br_ul;
+  }
+  return apn_ambr_sum;
+}
+
+//------------------------------------------------------------------------------
+ambr_t mme_app_total_p_gw_apn_ambr_rest(ue_context_t *ue_context, pdn_cid_t pci){
+  /** Get the total APN AMBR excluding the given PCI. */
+  pdn_context_t * registered_pdn_ctx = NULL;
+  ambr_t apn_ambr_sum= {0, 0};
+  RB_FOREACH (registered_pdn_ctx, PdnContexts, &ue_context->pdn_contexts) {
+    DevAssert(registered_pdn_ctx);
+    if(registered_pdn_ctx->context_identifier == pci)
+      continue;
+    apn_ambr_sum.br_dl += registered_pdn_ctx->subscribed_apn_ambr.br_dl;
+    apn_ambr_sum.br_ul += registered_pdn_ctx->subscribed_apn_ambr.br_ul;
+  }
+  return apn_ambr_sum;
+}
+
+//------------------------------------------------------------------------------
 mme_ue_s1ap_id_t mme_app_ctx_get_new_ue_id(void)
 {
   mme_ue_s1ap_id_t tmp = 0;

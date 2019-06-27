@@ -34,6 +34,7 @@ extern "C" {
 #define UDP_INIT(mSGpTR)        ((udp_init_t*)(mSGpTR)->itti_msg)
 #define UDP_DATA_IND(mSGpTR)    ((udp_data_ind_t*)(mSGpTR)->itti_msg)
 #define UDP_DATA_REQ(mSGpTR)    ((udp_data_req_t*)(mSGpTR)->itti_msg)
+#define UDP_DATA_MAX_MSG_LEN    (4096)  /**< Maximum supported gtpv2c packet length including header */
 
 typedef struct {
   struct in_addr  address;

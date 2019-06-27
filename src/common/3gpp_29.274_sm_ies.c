@@ -36,26 +36,46 @@
 #include "dynamic_memory_check.h"
 #include "common_defs.h"
 #include "assertions.h"
+#include "3gpp_24.301.h"
 #include "3gpp_29.274.h"
 #include "3gpp_24.008.h"
 
 
 //------------------------------------------------------------------------------
 void free_bearer_contexts_to_be_created(bearer_contexts_to_be_created_t **bcs_tbc){
-  bearer_contexts_to_be_created_t * bctbc = *bcs_tbc;
+  bearer_contexts_to_be_created_t * bcstbc = *bcs_tbc;
   // nothing to do for packet filters
-  for (int i = 0; i < bctbc->num_bearer_context; i++) {
-    for (int j = 0; j < bctbc->bearer_contexts[i].tft.parameterslist.num_parameters; j++) {
-      bdestroy_wrapper(&bctbc->bearer_contexts[i].tft.parameterslist.parameter[j].contents);
-    }
+  for (int i = 0; i < bcstbc->num_bearer_context; i++) {
+    if(bcstbc->bearer_contexts[i].tft)
+      free_traffic_flow_template(&bcstbc->bearer_contexts[i].tft);
   }
   free_wrapper((void**)bcs_tbc);
 }
 
 //------------------------------------------------------------------------------
+void free_bearer_contexts_to_be_updated(bearer_contexts_to_be_updated_t **bcs_tbu){
+  bearer_contexts_to_be_updated_t * bcstbu = *bcs_tbu;
+  // nothing to do for packet filters
+  for (int i = 0; i < bcstbu->num_bearer_context; i++) {
+    /** Destroy the bearer level qos. */
+    if(bcstbu->bearer_contexts[i].bearer_level_qos)
+      free_wrapper((void**)&bcstbu->bearer_contexts[i].bearer_level_qos);
+    if(bcstbu->bearer_contexts[i].tft)
+      free_traffic_flow_template(&bcstbu->bearer_contexts[i].tft);
+  }
+  free_wrapper((void**)bcs_tbu);
+}
+
+//------------------------------------------------------------------------------
+void free_bearer_contexts_to_be_deleted(bearer_contexts_to_be_removed_t **bcs_tbr){
+  bearer_contexts_to_be_removed_t * bctbr = *bcs_tbr;
+  // nothing to do for packet filters
+  free_wrapper((void**)bcs_tbr);
+}
+
+//------------------------------------------------------------------------------
 // 7.3.1 PDN Connections IE
 //------------------------------------------------------------------------------
-
 
 //------------------------------------------------------------------------------
 static void free_pdn_connection(pdn_connection_t * pdn_connection)
@@ -65,9 +85,8 @@ static void free_pdn_connection(pdn_connection_t * pdn_connection)
 
   /** Bearer Contexts to be Created. */
   for (int i = 0; i < pdn_connection->bearer_context_list.num_bearer_context; i++) {
-    for (int j = 0; j < pdn_connection->bearer_context_list.bearer_contexts[i].tft.parameterslist.num_parameters; j++) {
-      bdestroy_wrapper(&pdn_connection->bearer_context_list.bearer_contexts[i].tft.parameterslist.parameter[j].contents);
-    }
+    if(pdn_connection->bearer_context_list.bearer_contexts[i].tft)
+      free_traffic_flow_template(&pdn_connection->bearer_context_list.bearer_contexts[i].tft);
   }
 }
 

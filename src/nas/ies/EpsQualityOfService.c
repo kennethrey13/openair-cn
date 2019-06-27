@@ -19,6 +19,7 @@
  *      contact@openairinterface.org
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -188,93 +189,116 @@ int eps_qos_bit_rate_ext_value (uint8_t br)
 }
 
 //------------------------------------------------------------------------------
-int qos_params_to_eps_qos(const qci_t qci, const bitrate_t mbr_dl, const bitrate_t mbr_ul, const bitrate_t gbr_dl, const bitrate_t gbr_ul,
+void qos_params_to_eps_qos(const qci_t qci, const bitrate_t mbr_dl, const bitrate_t mbr_ul, const bitrate_t gbr_dl, const bitrate_t gbr_ul,
     EpsQualityOfService * const eps_qos, bool is_default_bearer)
 {
   // if someone volunteer for subroutines..., no time yet.
-  if (eps_qos) {
-    memset(eps_qos, 0, sizeof(EpsQualityOfService));
-    eps_qos->qci = qci;
-    if (!is_default_bearer) {
-      eps_qos->bitRatesPresent = 1;
-      if (mbr_ul == 0) {
-        eps_qos->bitRates.maxBitRateForUL = 0xff;
-      } else if ((mbr_ul > 0) && (mbr_ul <= 63)) {
-        eps_qos->bitRates.maxBitRateForUL = mbr_ul;
-      } else if ((mbr_ul > 63) && (mbr_ul <= 568)) {
-        eps_qos->bitRates.maxBitRateForUL = ((mbr_ul - 64) / 8) + 64;
-      } else if ((mbr_ul >= 576) && (mbr_ul <= 8640)) {
-        eps_qos->bitRates.maxBitRateForUL = ((mbr_ul - 128) / 64) + 128;
-      } else if (mbr_ul > 8640) {
-        eps_qos->bitRates.maxBitRateForUL = 0xfe;
-        eps_qos->bitRatesExtPresent = 1;
-        if ((mbr_ul >= 8600) && (mbr_ul <= 16000)) {
-          eps_qos->bitRatesExt.maxBitRateForUL = (mbr_ul - 8600) / 100;
-        } else if ((mbr_ul > 16000) && (mbr_ul <= 128000)) {
-          eps_qos->bitRatesExt.maxBitRateForUL = ((mbr_ul - 16000) / 1000) + 74;
-        } else if ((mbr_ul > 128000) && (mbr_ul <= 256000)) {
-          eps_qos->bitRatesExt.maxBitRateForUL = ((mbr_ul - 128000) / 2000) + 186;
-        }
-      }
-      if (mbr_dl == 0) {
-        eps_qos->bitRates.maxBitRateForDL = 0xff;
-      } else if ((mbr_dl > 0) && (mbr_dl <= 63)) {
-        eps_qos->bitRates.maxBitRateForDL = mbr_dl;
-      } else if ((mbr_dl > 63) && (mbr_dl <= 568)) {
-        eps_qos->bitRates.maxBitRateForDL = ((mbr_dl - 64) / 8) + 64;
-      } else if ((mbr_dl >= 576) && (mbr_dl <= 8640)) {
-        eps_qos->bitRates.maxBitRateForDL = ((mbr_dl - 128) / 64) + 128;
-      } else if (mbr_dl > 8640) {
-        eps_qos->bitRates.maxBitRateForDL = 0xfe;
-        eps_qos->bitRatesExtPresent = 1;
-        if ((mbr_dl >= 8600) && (mbr_dl <= 16000)) {
-          eps_qos->bitRatesExt.maxBitRateForDL = (mbr_dl - 8600) / 100;
-        } else if ((mbr_dl > 16000) && (mbr_dl <= 128000)) {
-          eps_qos->bitRatesExt.maxBitRateForDL = ((mbr_dl - 16000) / 1000) + 74;
-        } else if ((mbr_dl > 128000) && (mbr_dl <= 256000)) {
-          eps_qos->bitRatesExt.maxBitRateForDL = ((mbr_dl - 128000) / 2000) + 186;
-        }
-      }
-      if (gbr_ul == 0) {
-        eps_qos->bitRates.guarBitRateForUL = 0xff;
-      } else if ((gbr_ul > 0) && (gbr_ul <= 63)) {
-        eps_qos->bitRates.guarBitRateForUL = gbr_ul;
-      } else if ((gbr_ul > 63) && (gbr_ul <= 568)) {
-        eps_qos->bitRates.guarBitRateForUL = ((gbr_ul - 64) / 8) + 64;
-      } else if ((gbr_ul >= 576) && (gbr_ul <= 8640)) {
-        eps_qos->bitRates.guarBitRateForUL = ((gbr_ul - 128) / 64) + 128;
-      } else if (gbr_ul > 8640) {
-        eps_qos->bitRates.guarBitRateForUL = 0xfe;
-        eps_qos->bitRatesExtPresent = 1;
-        if ((gbr_ul >= 8600) && (gbr_ul <= 16000)) {
-          eps_qos->bitRatesExt.guarBitRateForUL = (gbr_ul - 8600) / 100;
-        } else if ((gbr_ul > 16000) && (gbr_ul <= 128000)) {
-          eps_qos->bitRatesExt.guarBitRateForUL = ((gbr_ul - 16000) / 1000) + 74;
-        } else if ((gbr_ul > 128000) && (gbr_ul <= 256000)) {
-          eps_qos->bitRatesExt.guarBitRateForUL = ((gbr_ul - 128000) / 2000) + 186;
-        }
-      }
-      if (gbr_dl == 0) {
-        eps_qos->bitRates.guarBitRateForDL = 0xff;
-      } else if ((gbr_dl > 0) && (gbr_dl <= 63)) {
-        eps_qos->bitRates.guarBitRateForDL = gbr_dl;
-      } else if ((gbr_dl > 63) && (gbr_dl <= 568)) {
-        eps_qos->bitRates.guarBitRateForDL = ((gbr_dl - 64) / 8) + 64;
-      } else if ((gbr_dl >= 576) && (gbr_dl <= 8640)) {
-        eps_qos->bitRates.guarBitRateForDL = ((gbr_dl - 128) / 64) + 128;
-      } else if (gbr_dl > 8640) {
-        eps_qos->bitRates.guarBitRateForDL = 0xfe;
-        eps_qos->bitRatesExtPresent = 1;
-        if ((gbr_dl >= 8600) && (gbr_dl <= 16000)) {
-          eps_qos->bitRatesExt.guarBitRateForDL = (gbr_dl - 8600) / 100;
-        } else if ((gbr_dl > 16000) && (gbr_dl <= 128000)) {
-          eps_qos->bitRatesExt.guarBitRateForDL = ((gbr_dl - 16000) / 1000) + 74;
-        } else if ((gbr_dl > 128000) && (gbr_dl <= 256000)) {
-          eps_qos->bitRatesExt.guarBitRateForDL = ((gbr_dl - 128000) / 2000) + 186;
-        }
+//  DevAssert(eps_qos);
+  memset(eps_qos, 0, sizeof(EpsQualityOfService));
+  eps_qos->qci = qci;
+  if (!is_default_bearer) {
+    eps_qos->bitRatesPresent = 1;
+    if (mbr_ul == 0) {
+      eps_qos->bitRates.maxBitRateForUL = 0xff;
+    } else if ((mbr_ul > 0) && (mbr_ul <= 63)) {
+      eps_qos->bitRates.maxBitRateForUL = mbr_ul;
+    } else if ((mbr_ul > 63) && (mbr_ul <= 568)) {
+      eps_qos->bitRates.maxBitRateForUL = ((mbr_ul - 64) / 8) + 64;
+    } else if ((mbr_ul >= 576) && (mbr_ul <= 8640)) {
+      eps_qos->bitRates.maxBitRateForUL = ((mbr_ul - 128) / 64) + 128;
+    } else if (mbr_ul > 8640) {
+      eps_qos->bitRates.maxBitRateForUL = 0xfe;
+      eps_qos->bitRatesExtPresent = 1;
+      if ((mbr_ul >= 8600) && (mbr_ul <= 16000)) {
+        eps_qos->bitRatesExt.maxBitRateForUL = (mbr_ul - 8600) / 100;
+      } else if ((mbr_ul > 16000) && (mbr_ul <= 128000)) {
+        eps_qos->bitRatesExt.maxBitRateForUL = ((mbr_ul - 16000) / 1000) + 74;
+      } else if ((mbr_ul > 128000) && (mbr_ul <= 256000)) {
+        eps_qos->bitRatesExt.maxBitRateForUL = ((mbr_ul - 128000) / 2000) + 186;
       }
     }
-    return RETURNok;
+    if (mbr_dl == 0) {
+      eps_qos->bitRates.maxBitRateForDL = 0xff;
+    } else if ((mbr_dl > 0) && (mbr_dl <= 63)) {
+      eps_qos->bitRates.maxBitRateForDL = mbr_dl;
+    } else if ((mbr_dl > 63) && (mbr_dl <= 568)) {
+      eps_qos->bitRates.maxBitRateForDL = ((mbr_dl - 64) / 8) + 64;
+    } else if ((mbr_dl >= 576) && (mbr_dl <= 8640)) {
+      eps_qos->bitRates.maxBitRateForDL = ((mbr_dl - 128) / 64) + 128;
+    } else if (mbr_dl > 8640) {
+      eps_qos->bitRates.maxBitRateForDL = 0xfe;
+      eps_qos->bitRatesExtPresent = 1;
+      if ((mbr_dl >= 8600) && (mbr_dl <= 16000)) {
+        eps_qos->bitRatesExt.maxBitRateForDL = (mbr_dl - 8600) / 100;
+      } else if ((mbr_dl > 16000) && (mbr_dl <= 128000)) {
+        eps_qos->bitRatesExt.maxBitRateForDL = ((mbr_dl - 16000) / 1000) + 74;
+      } else if ((mbr_dl > 128000) && (mbr_dl <= 256000)) {
+        eps_qos->bitRatesExt.maxBitRateForDL = ((mbr_dl - 128000) / 2000) + 186;
+      }
+    }
+    if (gbr_ul == 0) {
+      eps_qos->bitRates.guarBitRateForUL = 0xff;
+    } else if ((gbr_ul > 0) && (gbr_ul <= 63)) {
+      eps_qos->bitRates.guarBitRateForUL = gbr_ul;
+    } else if ((gbr_ul > 63) && (gbr_ul <= 568)) {
+      eps_qos->bitRates.guarBitRateForUL = ((gbr_ul - 64) / 8) + 64;
+    } else if ((gbr_ul >= 576) && (gbr_ul <= 8640)) {
+      eps_qos->bitRates.guarBitRateForUL = ((gbr_ul - 128) / 64) + 128;
+    } else if (gbr_ul > 8640) {
+      eps_qos->bitRates.guarBitRateForUL = 0xfe;
+      eps_qos->bitRatesExtPresent = 1;
+      if ((gbr_ul >= 8600) && (gbr_ul <= 16000)) {
+        eps_qos->bitRatesExt.guarBitRateForUL = (gbr_ul - 8600) / 100;
+      } else if ((gbr_ul > 16000) && (gbr_ul <= 128000)) {
+        eps_qos->bitRatesExt.guarBitRateForUL = ((gbr_ul - 16000) / 1000) + 74;
+      } else if ((gbr_ul > 128000) && (gbr_ul <= 256000)) {
+        eps_qos->bitRatesExt.guarBitRateForUL = ((gbr_ul - 128000) / 2000) + 186;
+      }
+    }
+    if (gbr_dl == 0) {
+      eps_qos->bitRates.guarBitRateForDL = 0xff;
+    } else if ((gbr_dl > 0) && (gbr_dl <= 63)) {
+      eps_qos->bitRates.guarBitRateForDL = gbr_dl;
+    } else if ((gbr_dl > 63) && (gbr_dl <= 568)) {
+      eps_qos->bitRates.guarBitRateForDL = ((gbr_dl - 64) / 8) + 64;
+    } else if ((gbr_dl >= 576) && (gbr_dl <= 8640)) {
+      eps_qos->bitRates.guarBitRateForDL = ((gbr_dl - 128) / 64) + 128;
+    } else if (gbr_dl > 8640) {
+      eps_qos->bitRates.guarBitRateForDL = 0xfe;
+      eps_qos->bitRatesExtPresent = 1;
+      if ((gbr_dl >= 8600) && (gbr_dl <= 16000)) {
+        eps_qos->bitRatesExt.guarBitRateForDL = (gbr_dl - 8600) / 100;
+      } else if ((gbr_dl > 16000) && (gbr_dl <= 128000)) {
+        eps_qos->bitRatesExt.guarBitRateForDL = ((gbr_dl - 16000) / 1000) + 74;
+      } else if ((gbr_dl > 128000) && (gbr_dl <= 256000)) {
+        eps_qos->bitRatesExt.guarBitRateForDL = ((gbr_dl - 128000) / 2000) + 186;
+      }
+    }
   }
-  return RETURNerror;
+}
+
+//------------------------------------------------------------------------------
+int validateEpsQosParameter(qci_t qci, int pvi, int pci, int pl, bitrate_t gbr_ul, bitrate_t gbr_dl, bitrate_t mbr_ul, bitrate_t mbr_dl){
+  /** Check ARP. */
+  if(!(0 <= pvi && pvi  <= 1))
+    OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNerror);
+
+  if(!(0 <= pci && pci <= 1))
+    OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNerror);
+
+  if(!(0 <= pl && pl <= 15))
+    OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNerror);
+
+
+  /** Check MBR/GBR depending on QCI. */
+  if( (1 <= qci && qci <= 4) || (65 <= qci && qci <= 66) || (75 == qci) ){
+    /** Received a GBR QCI. Check that bitrate values are set. */
+    if(gbr_dl && gbr_ul && mbr_dl &&  mbr_ul )
+      OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNok);
+  }else if( (5 <= qci && qci <= 9) || (69 <= qci && qci <= 70) || (79 == qci) ){
+    /** Received a NON-GBR QCI. Check that bitrate values are 0. */
+    if(!(gbr_dl || gbr_ul || mbr_dl ||  mbr_ul ))
+      OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNok);
+  }
+  OAILOG_FUNC_RETURN(LOG_NAS_ESM, RETURNerror);
 }

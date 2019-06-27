@@ -83,6 +83,14 @@ void *mme_app_thread (void *args)
       }
       break;
 
+    case S6A_UPDATE_LOCATION_ANS:{
+        /*
+         * We received the update location answer message from HSS -> Handle it
+         */
+        mme_app_handle_s6a_update_location_ans (&received_message_p->ittiMsg.s6a_update_location_ans);
+      }
+      break;
+
     case S6A_CANCEL_LOCATION_REQ:{
         /*
          * We received the cancel location request message from HSS -> Handle it
@@ -104,18 +112,28 @@ void *mme_app_thread (void *args)
       }
       break;
 
-    case MME_APP_ACTIVATE_BEARER_CNF:{
-      mme_app_handle_activate_bearer_cnf (&MME_APP_ACTIVATE_BEARER_CNF (received_message_p));
+    case NAS_ACTIVATE_EPS_BEARER_CTX_CNF:{
+      mme_app_handle_activate_eps_bearer_ctx_cnf (&NAS_ACTIVATE_EPS_BEARER_CTX_CNF (received_message_p));
     }
     break;
 
-    case MME_APP_ACTIVATE_BEARER_REJ:{
-      mme_app_handle_activate_bearer_rej (&MME_APP_ACTIVATE_BEARER_REJ (received_message_p));
+    case NAS_ACTIVATE_EPS_BEARER_CTX_REJ:{
+      mme_app_handle_activate_eps_bearer_ctx_rej (&NAS_ACTIVATE_EPS_BEARER_CTX_REJ (received_message_p));
     }
     break;
 
-    case MME_APP_DEACTIVATE_BEARER_CNF:{
-      mme_app_handle_deactivate_bearer_cnf (&MME_APP_DEACTIVATE_BEARER_CNF (received_message_p));
+    case NAS_MODIFY_EPS_BEARER_CTX_CNF:{
+      mme_app_handle_modify_eps_bearer_ctx_cnf (&NAS_MODIFY_EPS_BEARER_CTX_CNF (received_message_p));
+    }
+    break;
+
+    case NAS_MODIFY_EPS_BEARER_CTX_REJ:{
+      mme_app_handle_modify_eps_bearer_ctx_rej (&NAS_MODIFY_EPS_BEARER_CTX_REJ (received_message_p));
+    }
+    break;
+
+    case NAS_DEACTIVATE_EPS_BEARER_CTX_CNF:{
+      mme_app_handle_deactivate_eps_bearer_ctx_cnf (&NAS_DEACTIVATE_EPS_BEARER_CTX_CNF (received_message_p));
     }
     break;
 
@@ -139,45 +157,47 @@ void *mme_app_thread (void *args)
       }
       break;
 
+    case NAS_RETRY_BEARER_CTX_PROC_IND: {
+        mme_app_handle_bearer_ctx_retry(&NAS_RETRY_BEARER_CTX_PROC_IND (received_message_p));
+    }
+    break;
+
     case NAS_ERAB_SETUP_REQ:{
       mme_app_handle_nas_erab_setup_req (&NAS_ERAB_SETUP_REQ (received_message_p));
     }
     break;
 
-    case NAS_ERAB_RELEASE_REQ:{
-      mme_app_handle_nas_erab_release_req (&NAS_ERAB_RELEASE_REQ (received_message_p));
+    case NAS_ERAB_MODIFY_REQ:{
+      mme_app_handle_nas_erab_modify_req (&NAS_ERAB_MODIFY_REQ (received_message_p));
     }
     break;
 
-    case NAS_PDN_CONFIG_REQ: {
-      struct ue_context_s                    *ue_context_p = NULL;
-      ue_context_p = mme_ue_context_exists_mme_ue_s1ap_id (&mme_app_desc.mme_ue_contexts, received_message_p->ittiMsg.nas_pdn_config_req.ue_id);
-      if (ue_context_p) {
-        if(!ue_context_p->imsi_auth){
-          OAILOG_WARNING (LOG_MME_APP, "IMSI for UE context ueId " MME_UE_S1AP_ID_FMT " is not authenticated yet. Authenticating. \n", ue_context_p->mme_ue_s1ap_id);
-          ue_context_p->imsi_auth = IMSI_AUTHENTICATED;
-        }
-        mme_app_send_s6a_update_location_req(ue_context_p);
-        // todo    unlock_ue_contexts(ue_context_p);
-      }
-      break;
-
-    case NAS_PDN_CONNECTIVITY_REQ:{
-        mme_app_handle_nas_pdn_connectivity_req (&received_message_p->ittiMsg.nas_pdn_connectivity_req);
-      }
-      break;
+    case NAS_ERAB_RELEASE_REQ:{
+      mme_app_handle_nas_erab_release_req (NAS_ERAB_RELEASE_REQ (received_message_p).ue_id,
+          NAS_ERAB_RELEASE_REQ (received_message_p).ebi, NAS_ERAB_RELEASE_REQ (received_message_p).nas_msg);
+    }
+    break;
 
     case NAS_PDN_DISCONNECT_REQ:{
-        mme_app_handle_nas_pdn_disconnect_req (&received_message_p->ittiMsg.nas_pdn_disconnect_req);
-      }
-      break;
+      mme_app_handle_nas_pdn_disconnect_req (&received_message_p->ittiMsg.nas_pdn_disconnect_req);
+    }
+    break;
 
     case S11_CREATE_BEARER_REQUEST:
       mme_app_handle_s11_create_bearer_req (&received_message_p->ittiMsg.s11_create_bearer_request);
       break;
 
+    case S11_UPDATE_BEARER_REQUEST:
+      mme_app_handle_s11_update_bearer_req (&received_message_p->ittiMsg.s11_update_bearer_request);
+      break;
+
     case S11_DELETE_BEARER_REQUEST:
       mme_app_handle_s11_delete_bearer_req (&received_message_p->ittiMsg.s11_delete_bearer_request);
+      break;
+
+    case S11_DELETE_BEARER_FAILURE_INDICATION:{
+        mme_app_delete_bearer_failure_indication (&received_message_p->ittiMsg.s11_delete_bearer_failure_indication);
+      }
       break;
 
     case S11_CREATE_SESSION_RESPONSE:{
@@ -220,6 +240,16 @@ void *mme_app_thread (void *args)
       }
       break;
 
+    case S1AP_E_RAB_MODIFY_RSP:{
+        mme_app_handle_e_rab_modify_rsp (&S1AP_E_RAB_MODIFY_RSP (received_message_p));
+      }
+      break;
+
+    case S1AP_E_RAB_RELEASE_IND:{
+        mme_app_handle_e_rab_release_ind (&S1AP_E_RAB_RELEASE_IND (received_message_p));
+      }
+      break;
+
     case S1AP_ENB_DEREGISTERED_IND: {
         mme_app_handle_s1ap_enb_deregistered_ind (&received_message_p->ittiMsg.s1ap_eNB_deregistered_ind);
       }
@@ -249,15 +279,6 @@ void *mme_app_thread (void *args)
         mme_app_handle_s1ap_ue_context_release_req (&received_message_p->ittiMsg.s1ap_ue_context_release_req);
       }
       break;
-
-    case S6A_UPDATE_LOCATION_ANS:{
-        /*
-         * We received the update location answer message from HSS -> Handle it
-         */
-        mme_app_handle_s6a_update_location_ans (&received_message_p->ittiMsg.s6a_update_location_ans);
-      }
-      break;
-
 
     case MME_APP_INITIAL_CONTEXT_SETUP_FAILURE:{
       mme_app_handle_initial_context_setup_failure (&MME_APP_INITIAL_CONTEXT_SETUP_FAILURE (received_message_p));
@@ -291,8 +312,6 @@ void *mme_app_thread (void *args)
 
       /** S10 Forward Relocation Messages. */
       case S10_FORWARD_RELOCATION_REQUEST:{
-
-
           mme_app_handle_forward_relocation_request(
               &S10_FORWARD_RELOCATION_REQUEST(received_message_p)
               );
@@ -406,8 +425,7 @@ void *mme_app_thread (void *args)
               &S1AP_HANDOVER_NOTIFY(received_message_p)
               );
           }
-          break;
-
+      	   break;
 
     case TERMINATE_MESSAGE:{
         /*
@@ -416,16 +434,6 @@ void *mme_app_thread (void *args)
         mme_app_exit();
         itti_free_msg_content(received_message_p);
         itti_free (ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p);
-
-        // todo: how to terminate them?
-        timer_remove(mme_app_desc.statistic_timer_id, NULL);
-        hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.imsi_ue_context_htbl);
-        hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.tun11_ue_context_htbl);
-        hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.tun10_ue_context_htbl);
-        hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.mme_ue_s1ap_id_ue_context_htbl);
-        hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.enb_ue_s1ap_id_ue_context_htbl);
-        obj_hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.guti_ue_context_htbl);
-
 
         OAI_FPRINTF_INFO("TASK_MME_APP terminated\n");
         itti_exit_task ();
@@ -438,6 +446,8 @@ void *mme_app_thread (void *args)
          */
         if (received_message_p->ittiMsg.timer_has_expired.timer_id == mme_app_desc.statistic_timer_id) {
           mme_app_statistics_display ();
+          /** Display the ITTI buffer. */
+          itti_print_DEBUG ();
         } else if (received_message_p->ittiMsg.timer_has_expired.arg != NULL) {
           mme_ue_s1ap_id_t mme_ue_s1ap_id = *((mme_ue_s1ap_id_t *)(received_message_p->ittiMsg.timer_has_expired.arg));
           ue_context_p = mme_ue_context_exists_mme_ue_s1ap_id (&mme_app_desc.mme_ue_contexts, mme_ue_s1ap_id);
@@ -468,9 +478,6 @@ void *mme_app_thread (void *args)
             OAILOG_WARNING (LOG_MME_APP, "Timer expired but no associated timer_id for UE id " MME_UE_S1AP_ID_FMT "\n",mme_ue_s1ap_id);
           }
         }
-
-
-
       }
       break;
 
@@ -481,12 +488,11 @@ void *mme_app_thread (void *args)
       break;
     }
 
-    itti_free_msg_content(received_message_p);
-    itti_free (ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p);
-    received_message_p = NULL;
-    }
-  }
 
+    itti_free_msg_content(received_message_p);
+    itti_free(ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p);
+    received_message_p = NULL;
+  }
   return NULL;
 }
 
@@ -494,27 +500,31 @@ void *mme_app_thread (void *args)
 int mme_app_init (const mme_config_t * mme_config_p)
 {
   OAILOG_FUNC_IN (LOG_MME_APP);
+
   memset (&mme_app_desc, 0, sizeof (mme_app_desc));
   // todo: (from develop)   pthread_rwlock_init (&mme_app_desc.rw_lock, NULL); && where to unlock it?
   bstring b = bfromcstr("mme_app_imsi_ue_context_htbl");
   mme_app_desc.mme_ue_contexts.imsi_ue_context_htbl = hashtable_uint64_ts_create (mme_config.max_ues, NULL, b);
   btrunc(b, 0);
+  bassigncstr(b, "mme_app_enb_ue_s1ap_id_ue_context_htbl");
+  mme_app_desc.mme_ue_contexts.enb_ue_s1ap_id_ue_context_htbl = hashtable_uint64_ts_create (mme_config.max_ues, NULL, b);
+  btrunc(b, 0);
   bassigncstr(b, "mme_app_tun11_ue_context_htbl");
   mme_app_desc.mme_ue_contexts.tun11_ue_context_htbl = hashtable_uint64_ts_create (mme_config.max_ues, NULL, b);
-  AssertFatal(sizeof(uintptr_t) >= sizeof(uint64_t), "Problem with mme_ue_s1ap_id_ue_context_htbl in MME_APP");
+  AssertFatal(sizeof(uintptr_t) >= sizeof(uint64_t), "Problem with tun11_ue_context_htbl in MME_APP");
   btrunc(b, 0);
   bassigncstr(b, "mme_app_tun10_ue_context_htbl");
   mme_app_desc.mme_ue_contexts.tun10_ue_context_htbl = hashtable_uint64_ts_create (mme_config.max_ues, NULL, b);
-  AssertFatal(sizeof(uintptr_t) >= sizeof(uint64_t), "Problem with mme_ue_s1ap_id_ue_context_htbl in MME_APP");
+  AssertFatal(sizeof(uintptr_t) >= sizeof(uint64_t), "Problem with mme_app_tun10_ue_context_htbl in MME_APP");
   btrunc(b, 0);
   bassigncstr(b, "mme_app_mme_ue_s1ap_id_ue_context_htbl");
-  mme_app_desc.mme_ue_contexts.mme_ue_s1ap_id_ue_context_htbl = hashtable_uint64_ts_create (mme_config.max_ues, NULL, b);
-  btrunc(b, 0);
-  bassigncstr(b, "mme_app_enb_ue_s1ap_id_ue_context_htbl");
-  mme_app_desc.mme_ue_contexts.enb_ue_s1ap_id_ue_context_htbl = hashtable_ts_create (mme_config.max_ues, NULL, NULL, b);
+  mme_app_desc.mme_ue_contexts.mme_ue_s1ap_id_ue_context_htbl = hashtable_ts_create (mme_config.max_ues, NULL, NULL, b);
   btrunc(b, 0);
   bassigncstr(b, "mme_app_guti_ue_context_htbl");
-  mme_app_desc.mme_ue_contexts.guti_ue_context_htbl = obj_hashtable_uint64_ts_create (mme_config.max_ues, NULL, hash_free_int_func, b);
+  mme_app_desc.mme_ue_contexts.guti_ue_context_htbl = obj_hashtable_uint64_ts_create (mme_config.max_ues, NULL, hash_free_func, b);
+  btrunc(b, 0);
+  bassigncstr(b, "imsi_apn_configuration_htbl");
+  mme_app_desc.mme_ue_contexts.imsi_subscription_profile_htbl = hashtable_ts_create (mme_config.max_ues, NULL, NULL, b);
   bdestroy_wrapper (&b);
 
   if (mme_app_edns_init(mme_config_p)) {
@@ -540,7 +550,7 @@ int mme_app_init (const mme_config_t * mme_config_p)
     mme_app_desc.statistic_timer_id = 0;
   }
 
-  OAILOG_DEBUG (LOG_MME_APP, "Initializing MME applicative layer: DONE\n");
+  OAILOG_DEBUG (LOG_MME_APP, "Initializing MME applicative layer: DONE -- ASSERTING\n");
   OAILOG_FUNC_RETURN (LOG_MME_APP, RETURNok);
 }
 
@@ -551,10 +561,12 @@ void mme_app_exit (void)
   timer_remove(mme_app_desc.statistic_timer_id, NULL);
   mme_app_edns_exit();
   hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.imsi_ue_context_htbl);
+  hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.enb_ue_s1ap_id_ue_context_htbl);
   hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.tun11_ue_context_htbl);
   hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.tun10_ue_context_htbl);
-  hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.mme_ue_s1ap_id_ue_context_htbl);
-  hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.enb_ue_s1ap_id_ue_context_htbl);
+  hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.mme_ue_s1ap_id_ue_context_htbl);
+  hashtable_ts_destroy (mme_app_desc.mme_ue_contexts.imsi_subscription_profile_htbl);
   obj_hashtable_uint64_ts_destroy (mme_app_desc.mme_ue_contexts.guti_ue_context_htbl);
+
   mme_config_exit();
 }

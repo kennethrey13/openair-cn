@@ -19,9 +19,17 @@
  *      contact@openairinterface.org
  */
 
-#ifndef FILE_NAS_DEFS_SEEN
-#define FILE_NAS_DEFS_SEEN
+/*! \file s1ap_mme_ta.h
+  \brief
+  \author Sebastien ROUX, Lionel Gauthier
+  \company Eurecom
+  \email: lionel.gauthier@eurecom.fr
+*/
+#ifndef FILE_S1AP_MME_GUMMEI_SEEN
+#define FILE_S1AP_MME_GUMMEI_SEEN
 
-int nas_init(mme_config_t *mme_config_p);
+int
+s1ap_mme_compare_gummei (
+  const S1ap_PLMNidentity_t * const tbcd_plmn);
 
-#endif /* FILE_NAS_DEFS_SEEN */
+#endif /* FILE_S1AP_MME_TA_SEEN */

@@ -496,6 +496,7 @@ gtpv2c_bearer_context_to_be_created_within_create_session_request_ie_set (
   DevAssert (NW_OK == rc);
   gtpv2c_ebi_ie_set (msg, bearer_context->eps_bearer_id);
   gtpv2c_bearer_qos_ie_set(msg, &bearer_context->bearer_level_qos);
+
   /*
    * End section for grouped IE: bearer context to create
    */
@@ -925,6 +926,37 @@ int
 gtpv2c_bearer_context_created_ie_set (
   nw_gtpv2c_msg_handle_t * msg,
   const bearer_context_created_t * const bearer)
+{
+  nw_rc_t                                   rc;
+
+  DevAssert (msg );
+  DevAssert (bearer);
+  /*
+   * Start section for grouped IE: bearer context created
+   */
+  rc = nwGtpv2cMsgGroupedIeStart (*msg, NW_GTPV2C_IE_BEARER_CONTEXT, NW_GTPV2C_IE_INSTANCE_ZERO);
+  DevAssert (NW_OK == rc);
+  gtpv2c_ebi_ie_set (msg, bearer->eps_bearer_id);
+  rc = gtpv2c_cause_ie_set (msg, &bearer->cause);
+  DevAssert (NW_OK == rc);
+  rc = nwGtpv2cMsgAddIeFteid (*msg, NW_GTPV2C_IE_INSTANCE_ZERO,
+                              bearer->s1u_sgw_fteid.interface_type,
+                              bearer->s1u_sgw_fteid.teid,
+                              bearer->s1u_sgw_fteid.ipv4 ? &bearer->s1u_sgw_fteid.ipv4_address : 0,
+                              bearer->s1u_sgw_fteid.ipv6 ? &bearer->s1u_sgw_fteid.ipv6_address : NULL);
+  DevAssert (NW_OK == rc);
+  /*
+   * End section for grouped IE: bearer context created
+   */
+  rc = nwGtpv2cMsgGroupedIeEnd (*msg);
+  DevAssert (NW_OK == rc);
+  return RETURNok;
+}
+//------------------------------------------------------------------------------
+int
+gtpv2c_bearer_context_modified_ie_set (
+  nw_gtpv2c_msg_handle_t * msg,
+  const bearer_context_modified_t * const bearer)
 {
   nw_rc_t                                   rc;
 

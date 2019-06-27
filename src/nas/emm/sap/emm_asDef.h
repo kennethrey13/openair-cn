@@ -41,12 +41,12 @@ Description Defines the EMM primitives available at the EMMAS Service
 #ifndef FILE_EMM_ASDEF_SEEN
 #define FILE_EMM_ASDEF_SEEN
 #include "common_types.h"
-#include "commonDef.h"
+#include "common_defs.h"
 #include "securityDef.h"
-#include "TrackingAreaIdentityList.h"
 #include "3gpp_36.401.h"
 #include "3gpp_23.003.h"
 #include "emm_proc.h"
+#include "TrackingAreaIdentityList.h"
 
 /****************************************************************************/
 /*********************  G L O B A L    C O N S T A N T S  *******************/
@@ -66,14 +66,20 @@ typedef enum emm_as_primitive_u {
   _EMMAS_ESTABLISH_REJ, /* AS->EMM: Connection establish reject   */
   _EMMAS_RELEASE_REQ,   /* EMM->AS: Connection release request    */
   _EMMAS_RELEASE_IND,   /* AS->EMM: Connection release indication */
-  _EMMAS_ERAB_SETUP_REQ, /* EMM->AS: ERAB setup request  */
-  _EMMAS_ERAB_SETUP_CNF, /* AS->EMM  */
-  _EMMAS_ERAB_SETUP_REJ, /* AS->EMM  */
-  _EMMAS_ERAB_RELEASE_REQ, /* EMM->AS: ERAB release request  */
   _EMMAS_DATA_REQ,      /* EMM->AS: Data transfer request     */
   _EMMAS_DATA_IND,      /* AS->EMM: Data transfer indication      */
   _EMMAS_PAGE_IND,      /* AS->EMM: Paging data indication        */
   _EMMAS_STATUS_IND,    /* AS->EMM: Status indication         */
+
+  _EMMAS_ERAB_SETUP_REQ,
+  _EMMAS_ERAB_SETUP_CNF,
+  _EMMAS_ERAB_SETUP_REJ,
+  _EMMAS_ERAB_MODIFY_REQ,
+  _EMMAS_ERAB_MODIFY_CNF,
+  _EMMAS_ERAB_MODIFY_REJ,
+  _EMMAS_ERAB_RELEASE_REQ,
+  _EMMAS_ERAB_RELEASE_CNF,
+
   _EMMAS_END
 } emm_as_primitive_t;
 
@@ -176,6 +182,7 @@ typedef struct emm_as_establish_s {
   uint8_t                nas_info;    /* Type of NAS information to transfer  */
   bstring                nas_msg;     /* NAS message to be transfered     */
   uint8_t                eps_update_result;           /* TAU EPS update result   */
+  uint16_t               eps_bearer_context_status;   /* TAU EPS bearer context result   */
 
   uint64_t               puid;                        /* linked to procedure UID */
   bool                   is_initial;                  /* true if contained in initial message    */
@@ -195,7 +202,6 @@ typedef struct emm_as_establish_s {
 #define EMM_AS_NAS_INFO_NONE    0xFF                  /* No Nas Message  */
 
   uint32_t              *t3412;                       /* GPRS T3412 timer   */
-  uint16_t              *eps_bearer_context_status;   /* TAU EPS bearer context status   */
   void                  *location_area_identification;/* TAU Location area identification */
   //void                *ms_identity;                 /* TAU 8.2.26.7   MS identity This IE may be included to assign or unassign a new TMSI to a UE during a combined TA/LA update. */
   int                   *combined_tau_emm_cause;      /* TAU EMM failure cause code   */
@@ -243,12 +249,14 @@ typedef struct emm_as_data_s {
   uint8_t                nas_info;    /* Type of NAS information to transfer  */
   bstring                nas_msg;     /* NAS message to be transfered     */
   uint8_t                eps_update_result;           /* TAU EPS update result   */
+  uint16_t               eps_bearer_context_status;           /* EPS bearer context result   */
 
 #define EMM_AS_DATA_DELIVERED_LOWER_LAYER_FAILURE                  0
 #define EMM_AS_DATA_DELIVERED_TRUE                                 1
 #define EMM_AS_DATA_DELIVERED_LOWER_LAYER_NON_DELIVERY_INDICATION_DUE_TO_HO  2
   uint8_t                delivered;   /* Data message delivery indicator  */
   emm_proc_detach_type_t detach_type; /**< Set to true if reattach is required. */
+  bool					 pending_deac;
 #define EMM_AS_NAS_DATA_ATTACH          0x01  /* Attach complete      */
 #define EMM_AS_NAS_DATA_DETACH_ACCEPT   0x02  /* Detach request       */
 #define EMM_AS_NAS_DATA_TAU             0x03  /* TAU    Accept        */
@@ -258,7 +266,7 @@ typedef struct emm_as_data_s {
 } emm_as_data_t;
 
 /*
- * EMMAS primitive for dedicated bearer establishment
+ * EMMAS primitive for (dedicated) bearer establishment, modification and removal
  * ----------------------------------------------------
  */
 
@@ -274,6 +282,18 @@ typedef struct emm_as_activate_bearer_context_req_s {
   bstring                nas_msg;     /* NAS message to be transfered     */
 } emm_as_activate_bearer_context_req_t;
 
+typedef struct emm_as_modify_bearer_context_req_s {
+  int                    emm_cause;                   /* EMM failure cause code        */
+  mme_ue_s1ap_id_t       ue_id;       /* UE lower layer identifier        */
+  ebi_t                  ebi;         /* EPS rab id                       */
+  bitrate_t              mbr_dl;
+  bitrate_t              mbr_ul;
+  bitrate_t              gbr_dl;
+  bitrate_t              gbr_ul;
+  emm_as_security_data_t sctx;        /* EPS NAS security context         */
+  bstring                nas_msg;     /* NAS message to be transfered     */
+} emm_as_modify_bearer_context_req_t;
+
 typedef struct emm_as_deactivate_bearer_context_req_s {
   int                    emm_cause;                   /* EMM failure cause code        */
   mme_ue_s1ap_id_t       ue_id;       /* UE lower layer identifier        */
@@ -286,6 +306,12 @@ typedef struct emm_as_erab_setup_rej_s {
   mme_ue_s1ap_id_t       ue_id;
   ebi_t                  ebi;
 } emm_as_erab_setup_rej_t;
+
+typedef struct emm_as_erab_modify_rej_s {
+  mme_ue_s1ap_id_t       ue_id;
+  ebi_t                  ebi;
+  bool                   remove_bearer;
+} emm_as_erab_modify_rej_t;
 
 /*
  * EMMAS primitive for status indication
@@ -328,8 +354,10 @@ typedef struct emm_as_s {
     emm_as_release_t    release;
     emm_as_data_t       data;
     emm_as_activate_bearer_context_req_t activate_bearer_context_req;
+    emm_as_modify_bearer_context_req_t modify_bearer_context_req;
     emm_as_deactivate_bearer_context_req_t deactivate_bearer_context_req;
     emm_as_erab_setup_rej_t erab_setup_rej;
+    emm_as_erab_modify_rej_t erab_modify_rej;
     emm_as_status_t     status;
     emm_as_cell_info_t  cell_info;
   } u;

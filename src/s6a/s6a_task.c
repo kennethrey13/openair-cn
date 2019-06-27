@@ -86,7 +86,7 @@ static void oai_fd_logger(int loglevel, const char * format, va_list args)
   if ((0 > rv2) || ((FD_LOG_MAX_MESSAGE_LENGTH - rv1) < rv2)) {
     return;
   }
-  fprintf (stdout, "%s\n", buffer);
+  OAILOG_EXTERNAL (loglevel, LOG_S6A, "%s\n", buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -146,10 +146,11 @@ void *s6a_thread (void *args)
       }
       break;
     default:{
-        OAILOG_DEBUG (LOG_S6A, "Unkwnon message ID %d: %s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
+        OAILOG_DEBUG (LOG_S6A, "Unknown message ID %d: %s\n", ITTI_MSG_ID (received_message_p), ITTI_MSG_NAME (received_message_p));
       }
       break;
     }
+    itti_free_msg_content(received_message_p);
     itti_free (ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p);
     received_message_p = NULL;
   }

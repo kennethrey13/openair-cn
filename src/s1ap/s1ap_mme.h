@@ -111,6 +111,7 @@ typedef struct enb_description_s {
   char     enb_name[150];      ///< Printable eNB Name
   uint32_t enb_id;             ///< Unique eNB ID
   uint8_t  default_paging_drx; ///< Default paging DRX interval for eNB
+  tai_list_t    tai_list;               ///< Tracking Area Identifiers signaled by the eNB (for each cell - used for paging.).
   /*@}*/
 
   /** UE list for this eNB **/
@@ -146,6 +147,15 @@ void s1ap_mme_exit (void);
  * @returns NULL if no eNB matchs the eNB id, or reference to the eNB element in list if matches
  **/
 enb_description_t* s1ap_is_enb_id_in_list(const uint32_t enb_id);
+
+/** \brief Look for given TAC in the list.
+ * \param tac TAC is not uniqueue and used for the search in the list.
+ * @returns All matched eNBs in the enb_list.
+ **/
+void s1ap_is_tac_in_list (
+  const tac_t tac,
+  int *num_enbs,
+  enb_description_t ** enbs);
 
 /** \brief Look for given eNB SCTP assoc id in the list
  * \param enb_id The unique sctp assoc id to search in list
@@ -231,15 +241,16 @@ void s1ap_dump_ue(const ue_description_t * const ue_ref);
 bool s1ap_enb_compare_by_enb_id_cb (const hash_key_t keyP,
                                     void * const elementP, void * parameterP, void __attribute__((unused)) **unused_resultP);
 
+bool s1ap_enb_compare_by_tac_cb (const hash_key_t keyP,
+                                    void * const elementP, void * parameterP, void __attribute__((unused)) **unused_resultP);
+
+void
+s1ap_set_tai (enb_description_t * enb_ref, S1ap_SupportedTAs_t * ta_list);
+
 /** \brief Remove target UE from the list
  * \param ue_ref UE structure reference to remove
  **/
 void s1ap_remove_ue(ue_description_t *ue_ref);
-
-/** \brief Remove target eNB from the list and remove any UE associated
- * \param enb_ref eNB structure reference to remove
- **/
-void s1ap_remove_enb(enb_description_t *enb_ref);
 
 ///**
 // * Add a bearer context to the list.

@@ -29,8 +29,10 @@
 #ifndef FILE_3GPP_24_008_SEEN
 #define FILE_3GPP_24_008_SEEN
 
-#include "3gpp_23.003.h"
 #include <stdbool.h>
+#include "bstrlib.h"
+#include "3gpp_23.003.h"
+#include "EsmCause.h"
 
 //#warning "Set it to max size of message"
 #define IE_UNDEFINED_MAX_LENGTH 1024
@@ -939,7 +941,7 @@ typedef packet_filter_identifier_t delete_packet_filter_t;
  * in existing TFT" shall contain a variable number of packet filters
  * ------------------------------------------------------------------
  */
-#define TRAFFIC_FLOW_TEMPLATE_NB_PACKET_FILTERS_MAX 4
+#define TRAFFIC_FLOW_TEMPLATE_NB_PACKET_FILTERS_MAX 16
 typedef struct packet_filter_s {
   uint8_t         spare:2;
 #define TRAFFIC_FLOW_TEMPLATE_PRE_REL7_TFT_FILTER 0b00
@@ -1003,6 +1005,9 @@ typedef struct traffic_flow_template_s {
   parameters_list_t    parameterslist; // The parameters list contains a variable number of parameters that may be
                                        // transferred. If the parameters list is included, the E bit is set to 1; otherwise, the E bit
                                        // is set to 0.
+  /** Own field to set. */
+  long                 packet_filter_identifier_bitmap;  /**<< Map of allocated identifiers. */
+  uint8_t              precedence_set[256];              /**<< Map precedences to identifier. */
 } traffic_flow_template_t;
 
 #define TFT_ENCODE_IEI_TRUE     true
@@ -1015,7 +1020,11 @@ int encode_traffic_flow_template_ie (const traffic_flow_template_t * const traff
 int decode_traffic_flow_template(traffic_flow_template_t *trafficflowtemplate, const uint8_t * const buffer, const uint32_t len);
 int decode_traffic_flow_template_ie(traffic_flow_template_t *trafficflowtemplate, const bool iei_present, const uint8_t * const buffer, const uint32_t len);
 void copy_traffic_flow_template (traffic_flow_template_t * const tft_dst, const traffic_flow_template_t * const tft_src);
+void clear_traffic_flow_template(traffic_flow_template_t * tft);
 void free_traffic_flow_template(traffic_flow_template_t ** tft);
+
+/** Verify a TFT received from the P-GW. */
+esm_cause_t verify_traffic_flow_template(traffic_flow_template_t * tft, traffic_flow_template_t * tft_original);
 
 //******************************************************************************
 // 10.5.7 GPRS Common information elements

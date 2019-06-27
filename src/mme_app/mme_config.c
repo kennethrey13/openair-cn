@@ -50,6 +50,7 @@
 #include "common_defs.h"
 #include "mme_config.h"
 #include "spgw_config.h"
+#include "s1ap_mme_ta.h"
 
 struct mme_config_s                       mme_config = {.rw_lock = PTHREAD_RWLOCK_INITIALIZER, 0};
 
@@ -88,6 +89,72 @@ int mme_config_find_mnc_length (
   return 0;
 }
 
+//------------------------------------------------------------------------------
+static
+int mme_app_compare_plmn (
+  const plmn_t * const plmn)
+{
+  int                                     i = 0;
+  uint16_t                                mcc = 0;
+  uint16_t                                mnc = 0;
+  uint16_t                                mnc_len = 0;
+
+  DevAssert (plmn != NULL);
+  /** Get the integer values from the PLMN. */
+  PLMN_T_TO_MCC_MNC ((*plmn), mcc, mnc, mnc_len);
+
+  mme_config_read_lock (&mme_config);
+
+  for (i = 0; i < mme_config.served_tai.nb_tai; i++) {
+    OAILOG_TRACE (LOG_MME_APP, "Comparing plmn_mcc %d/%d, plmn_mnc %d/%d plmn_mnc_len %d/%d\n",
+        mme_config.served_tai.plmn_mcc[i], mcc, mme_config.served_tai.plmn_mnc[i], mnc, mme_config.served_tai.plmn_mnc_len[i], mnc_len);
+
+    if ((mme_config.served_tai.plmn_mcc[i] == mcc) &&
+        (mme_config.served_tai.plmn_mnc[i] == mnc) &&
+        (mme_config.served_tai.plmn_mnc_len[i] == mnc_len))
+      /*
+       * There is a matching plmn
+       */
+      return TA_LIST_AT_LEAST_ONE_MATCH;
+  }
+
+  mme_config_unlock (&mme_config);
+  return TA_LIST_NO_MATCH;
+}
+
+//------------------------------------------------------------------------------
+/* @brief compare a TAC
+*/
+static
+int mme_app_compare_tac (
+  uint16_t tac_value)
+{
+  int                                     i = 0;
+
+  mme_config_read_lock (&mme_config);
+
+  for (i = 0; i < mme_config.served_tai.nb_tai; i++) {
+    OAILOG_TRACE (LOG_MME_APP, "Comparing config tac %d, received tac = %d\n", mme_config.served_tai.tac[i], tac_value);
+
+    if (mme_config.served_tai.tac[i] == tac_value)
+      return TA_LIST_AT_LEAST_ONE_MATCH;
+  }
+
+  mme_config_unlock (&mme_config);
+  return TA_LIST_NO_MATCH;
+}
+
+//------------------------------------------------------------------------------
+bool mme_app_check_ta_local(const plmn_t * target_plmn, const tac_t target_tac){
+  if(TA_LIST_AT_LEAST_ONE_MATCH == mme_app_compare_plmn(target_plmn)){
+    if(TA_LIST_AT_LEAST_ONE_MATCH == mme_app_compare_tac(target_tac)){
+      OAILOG_DEBUG (LOG_MME_APP, "TAC and PLMN are matching. \n");
+      return true;
+    }
+  }
+  OAILOG_DEBUG (LOG_MME_APP, "TAC or PLMN are not matching. \n");
+  return false;
+}
 
 //------------------------------------------------------------------------------
 static void mme_config_init (mme_config_t * config_pP)
@@ -179,7 +246,7 @@ static void mme_config_init (mme_config_t * config_pP)
   config_pP->nas_config.t3486_sec = T3486_DEFAULT_VALUE;
   config_pP->nas_config.t3489_sec = T3489_DEFAULT_VALUE;
   config_pP->nas_config.t3495_sec = T3495_DEFAULT_VALUE;
-  config_pP->nas_config.force_reject_tau = true;
+  config_pP->nas_config.force_tau = MME_FORCE_TAU_S;
   config_pP->nas_config.force_reject_sr  = true;
   config_pP->nas_config.disable_esm_information = false;
 
@@ -551,7 +618,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
       }
 
       config_pP->served_tai.nb_tai = num;
-      AssertFatal(16 >= num , "Too many TAIs configured %d", num);
+      AssertFatal(64 >= num , "Too many TAIs configured %d", num);
 
       for (i = 0; i < num; i++) {
         sub2setting = config_setting_get_elem (setting, i);
@@ -645,6 +712,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
         }
       }
     }
+
 
     // GUMMEI SETTING
     setting = config_setting_get_member (setting_mme, MME_CONFIG_STRING_GUMMEI_LIST);
@@ -840,13 +908,9 @@ static int mme_config_parse_file (mme_config_t * config_pP)
       if ((config_setting_lookup_int (setting, MME_CONFIG_STRING_NAS_T3495_TIMER, &aint))) {
         config_pP->nas_config.t3495_sec = (uint32_t) aint;
       }
-
-//      if ((config_setting_lookup_string (setting, MME_CONFIG_STRING_NAS_FORCE_REJECT_TAU, (const char **)&astring))) {
-//        if (strcasecmp (astring, "yes") == 0)
-//          config_pP->nas_config.force_reject_tau = true;
-//        else
-//          config_pP->nas_config.force_reject_tau = false;
-//      }
+      if ((config_setting_lookup_int (setting, MME_CONFIG_STRING_NAS_FORCE_TAU, &aint))) {
+    	  config_pP->nas_config.force_tau = ((uint32_t) aint);
+      }
 //      if ((config_setting_lookup_string (setting, MME_CONFIG_STRING_NAS_FORCE_REJECT_SR, (const char **)&astring))) {
 //        if (strcasecmp (astring, "yes") == 0)
 //          config_pP->nas_config.force_reject_sr = true;
@@ -892,6 +956,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
           AssertFatal(2 == list->qty, "Bad CIDR address %s", bdata(cidr));
           address = list->entry[0];
           IPV4_STR_ADDR_TO_INADDR (bdata(address), config_pP->e_dns_emulation.service_ip_addr[i], "BAD IP ADDRESS FORMAT FOR SGW S11 !\n");
+          config_pP->e_dns_emulation.interface_type[i] = S11_SGW_GTP_C;
           bstrListDestroy(list);
           bdestroy_wrapper(&cidr);
           OAILOG_INFO (LOG_MME_APP, "Parsing configuration file found S-GW S11: %s\n", inet_ntoa (config_pP->e_dns_emulation.service_ip_addr[i]));
@@ -907,6 +972,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
           AssertFatal(2 == list->qty, "Bad CIDR address %s", bdata(cidr));
           address = list->entry[0];
           IPV4_STR_ADDR_TO_INADDR (bdata(address), config_pP->e_dns_emulation.service_ip_addr[i], "BAD IP ADDRESS FORMAT FOR MME S10 !\n");
+          config_pP->e_dns_emulation.interface_type[i] = S10_MME_GTP_C;
           bstrListDestroy(list);
           bdestroy_wrapper(&cidr);
           OAILOG_INFO (LOG_MME_APP, "Parsing configuration file found MME S10: %s\n", inet_ntoa (config_pP->e_dns_emulation.service_ip_addr[i]));
@@ -1044,7 +1110,7 @@ static void mme_config_display (mme_config_t * config_pP)
   OAILOG_INFO (LOG_CONFIG, "    T3470 ....: %d sec\n", config_pP->nas_config.t3470_sec);
   OAILOG_INFO (LOG_CONFIG, "    T3495 ....: %d sec\n", config_pP->nas_config.t3495_sec);
   OAILOG_INFO (LOG_CONFIG, "    NAS non standart features .:\n");
-  OAILOG_INFO (LOG_CONFIG, "      Force reject TAU ............: %s\n", (config_pP->nas_config.force_reject_tau) ? "true":"false");
+  OAILOG_INFO (LOG_CONFIG, "      Force TAU ...................: %s\n", (config_pP->nas_config.force_tau) ? "true":"false");
   OAILOG_INFO (LOG_CONFIG, "      Force reject SR .............: %s\n", (config_pP->nas_config.force_reject_sr) ? "true":"false");
   OAILOG_INFO (LOG_CONFIG, "      Disable Esm information .....: %s\n", (config_pP->nas_config.disable_esm_information) ? "true":"false");
 

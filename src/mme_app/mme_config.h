@@ -32,6 +32,7 @@
 
 #include "mme_default_values.h"
 #include "3gpp_23.003.h"
+#include "3gpp_29.274.h"
 #include "common_dim.h"
 #include "common_types.h"
 #include "bstrlib.h"
@@ -116,12 +117,11 @@
 #define MME_CONFIG_STRING_NAS_T3485_TIMER                "T3485"
 #define MME_CONFIG_STRING_NAS_T3486_TIMER                "T3486"
 #define MME_CONFIG_STRING_NAS_T3489_TIMER                "T3489"
-#define MME_CONFIG_STRING_NAS_T3346_TIMER                "T3346"
 #define MME_CONFIG_STRING_NAS_T3495_TIMER                "T3495"
 
 #define MME_CONFIG_STRING_NAS_DISABLE_ESM_INFORMATION_PROCEDURE    "DISABLE_ESM_INFORMATION_PROCEDURE"
 #define MME_CONFIG_STRING_NAS_FORCE_PUSH_DEDICATED_BEARER "FORCE_PUSH_DEDICATED_BEARER"
-
+#define MME_CONFIG_STRING_NAS_FORCE_TAU					  "NAS_FORCE_TAU"
 
 //#define MME_CONFIG_STRING_NAS_FORCE_PUSH_DEDICATED_BEARER "FORCE_PUSH_DEDICATED_BEARER"
 #define MME_CONFIG_STRING_MME_IPV4_ADDRESS_FOR_S10        "MME_IPV4_ADDRESS_FOR_S10"
@@ -132,7 +132,7 @@
 #define MME_CONFIG_STRING_ASN1_VERBOSITY_INFO            "info"
 
 #define MME_CONFIG_STRING_WRR_LIST_SELECTION             "WRR_LIST_SELECTION"
-#define MME_CONFIG_STRING_PEER_MME_IPV4_ADDRESS_FOR_S10  "PEER_MME_IPV4_ADDRESS_FOR_S10'"
+#define MME_CONFIG_STRING_PEER_MME_IPV4_ADDRESS_FOR_S10  "MME_IPV4_ADDRESS_FOR_S10"
 ///** MME S10 List --> todo: later FULL WRR : Finding MME via eNB. */
 //#define MME_CONFIG_STRING_MME_LIST_SELECTION             "MME_LIST_SELECTION"
 
@@ -254,7 +254,7 @@ typedef struct mme_config_s {
     uint32_t t3495_sec;
 
     // non standart features
-    bool     force_reject_tau;
+    bool     force_tau;
     bool     force_reject_sr;
     bool     disable_esm_information;
   } nas_config;
@@ -262,9 +262,10 @@ typedef struct mme_config_s {
   struct {
     int nb_service_entries;
 //#define MME_CONFIG_MAX_SGW 16
-#define MME_CONFIG_MAX_SERVICE 64
+#define MME_CONFIG_MAX_SERVICE 128
 
     bstring        service_id[MME_CONFIG_MAX_SERVICE];
+    interface_type_t interface_type[MME_CONFIG_MAX_SERVICE];
     struct in_addr service_ip_addr[MME_CONFIG_MAX_SERVICE];
     /** MME entries. */
 
@@ -281,6 +282,8 @@ typedef struct mme_config_s {
 } mme_config_t;
 
 extern mme_config_t mme_config;
+
+bool mme_app_check_ta_local(const plmn_t * target_plmn, const tac_t target_tac);
 
 int mme_config_find_mnc_length(const char mcc_digit1P,
                                const char mcc_digit2P,

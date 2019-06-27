@@ -45,19 +45,21 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#include "emm_fsm.h"
-#include "commonDef.h"
+#include "common_defs.h"
 #include "log.h"
 #include "common_defs.h"
 #include "3gpp_24.007.h"
 #include "3gpp_24.008.h"
 #include "3gpp_29.274.h"
-#include "mme_app_ue_context.h"
-#include "mme_api.h"
-#include "emm_data.h"
 #include "assertions.h"
 #include "msc.h"
 #include "mme_app_defs.h"
+
+#include "mme_app_ue_context.h"
+#include "emm_data.h"
+#include "mme_api.h"
+#include "emm_fsm.h"
+#include "emm_regDef.h"
 
 /****************************************************************************/
 /****************  E X T E R N A L    D E F I N I T I O N S  ****************/
@@ -206,6 +208,10 @@ emm_fsm_set_state (
       }
       // Update mme_ue_context's emm_state and overall stats
       mme_ue_context_update_ue_emm_state (ue_id, new_emm_state);
+    }else {
+      OAILOG_WARNING (LOG_NAS_EMM, "UE " MME_UE_S1AP_ID_FMT" EMM-FSM   - Status not changed changed: %s \n", ue_id, _emm_fsm_status_str[emm_context->_emm_fsm_state]);
+      /** Setting this as error to abort implicit detach procedures for ex.. */
+      OAILOG_FUNC_RETURN (LOG_NAS_EMM, RETURNerror);
     }
 
     OAILOG_FUNC_RETURN (LOG_NAS_EMM, RETURNok);

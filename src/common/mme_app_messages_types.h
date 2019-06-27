@@ -29,19 +29,12 @@
 #ifndef FILE_MME_APP_MESSAGES_TYPES_SEEN
 #define FILE_MME_APP_MESSAGES_TYPES_SEEN
 
-#include "nas_messages_types.h"
 #include "s1ap_common.h"
 #include "s10_messages_types.h"
+#include "nas_messages_types.h"
 
 #define MME_APP_CONNECTION_ESTABLISHMENT_CNF(mSGpTR)     (mSGpTR)->ittiMsg.mme_app_connection_establishment_cnf
 #define MME_APP_INITIAL_CONTEXT_SETUP_RSP(mSGpTR)        (mSGpTR)->ittiMsg.mme_app_initial_context_setup_rsp
-
-#define MME_APP_ACTIVATE_BEARER_REQ(mSGpTR)              (mSGpTR)->ittiMsg.mme_app_activate_bearer_req
-#define MME_APP_ACTIVATE_BEARER_CNF(mSGpTR)              (mSGpTR)->ittiMsg.mme_app_activate_bearer_cnf
-#define MME_APP_ACTIVATE_BEARER_REJ(mSGpTR)              (mSGpTR)->ittiMsg.mme_app_activate_bearer_rej
-
-#define MME_APP_DEACTIVATE_BEARER_REQ(mSGpTR)            (mSGpTR)->ittiMsg.mme_app_deactivate_bearer_req
-#define MME_APP_DEACTIVATE_BEARER_CNF(mSGpTR)            (mSGpTR)->ittiMsg.mme_app_deactivate_bearer_cnf
 
 #define MME_APP_INITIAL_CONTEXT_SETUP_FAILURE(mSGpTR)    (mSGpTR)->ittiMsg.mme_app_initial_context_setup_failure
 /** Necessary for TAU. */
@@ -49,7 +42,6 @@
 
 #define MME_APP_S1AP_MME_UE_ID_NOTIFICATION(mSGpTR)      (mSGpTR)->ittiMsg.mme_app_s1ap_mme_ue_id_notification
 
-#define MME_APP_E_RAB_FAILURE(mSGpTR)                    (mSGpTR)->ittiMsg.mme_app_e_rab_failure
 
 typedef struct itti_mme_app_connection_establishment_cnf_s {
   mme_ue_s1ap_id_t        ue_id;
@@ -108,52 +100,12 @@ typedef struct itti_mme_app_connection_establishment_cnf_s {
 typedef struct itti_mme_app_initial_context_setup_rsp_s {
   mme_ue_s1ap_id_t        ue_id;
   uint8_t                 no_of_e_rabs;
+  bearer_contexts_to_be_modified_t    bcs_to_be_modified;
 
-  ebi_t                   e_rab_id[BEARERS_PER_UE];
-  bstring                 transport_layer_address[BEARERS_PER_UE];
-  s1u_teid_t              gtp_teid[BEARERS_PER_UE];
+  // E-RAB Released List
+  e_rab_list_t                  e_rab_release_list;
+
 } itti_mme_app_initial_context_setup_rsp_t;
-
-typedef struct itti_mme_app_activate_bearer_req_s {
-  /* UE identifier */
-  mme_ue_s1ap_id_t                  ue_id;
-  pdn_cid_t                         cid;
-  ebi_t                             linked_ebi;
-  pti_t                             pti;
-  /** No EBI will set yet. */
-  bearer_contexts_to_be_created_t  *bcs_to_be_created;
-} itti_mme_app_activate_bearer_req_t;
-
-typedef struct itti_mme_app_activate_bearer_cnf_s {
-  /* UE identifier */
-  mme_ue_s1ap_id_t                      ue_id;
-  ebi_t                                 ebi;
-} itti_mme_app_activate_bearer_cnf_t;
-
-typedef struct itti_mme_app_activate_bearer_rej_s {
-  /* UE identifier */
-  mme_ue_s1ap_id_t                      ue_id;
-  ebi_t                                 ebi;
-
-} itti_mme_app_activate_bearer_rej_t;
-
-typedef struct itti_mme_app_deactivate_bearer_req_s {
-  /* UE identifier */
-#define ESM_SAP_ALL_EBI     0xff
-  mme_ue_s1ap_id_t                  ue_id;
-  ebi_t                             def_ebi;
-  pti_t                             pti;
-  pdn_cid_t                         cid;
-  ebi_list_t                        ebis;
-} itti_mme_app_deactivate_bearer_req_t;
-
-typedef struct itti_mme_app_deactivate_bearer_cnf_s {
-  /* UE identifier */
-  mme_ue_s1ap_id_t                  ue_id;
-  ebi_t                             ded_ebi;
-  ebi_t                             def_ebi;
-  pdn_cid_t                         pid;
-} itti_mme_app_deactivate_bearer_cnf_t;
 
 typedef struct itti_mme_app_s1ap_mme_ue_id_notification_s {
   enb_ue_s1ap_id_t      enb_ue_s1ap_id;
@@ -164,11 +116,6 @@ typedef struct itti_mme_app_s1ap_mme_ue_id_notification_s {
 typedef struct itti_mme_app_initial_context_setup_failure_s {
   mme_ue_s1ap_id_t      mme_ue_s1ap_id;
 } itti_mme_app_initial_context_setup_failure_t;
-
-typedef struct itti_mme_app_e_rab_failure_s {
-  mme_ue_s1ap_id_t      mme_ue_s1ap_id;
-  ebi_t                 ebi;
-} itti_mme_app_e_rab_failure_t;
 
 typedef struct itti_mme_app_nas_update_location_cnf_s {
   mme_ue_s1ap_id_t    ue_id;

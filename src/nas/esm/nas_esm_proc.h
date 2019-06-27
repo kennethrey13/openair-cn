@@ -20,40 +20,28 @@
  */
 
 /*****************************************************************************
-Source      esm_send.h
+Source      nas_esm_proc.h
 
 Version     0.1
 
-Date        2013/02/11
+Date        2012/09/20
 
-Product     NAS stack
+Product     NAS ESM stack
 
-Subsystem   EPS Session Management
+Subsystem   NAS ESM main process
 
-Author      Frederic Maurel
+Author      Frederic Maurel, Lionel GAUTHIER, Dincer Beken
 
-Description Defines functions executed at the ESM Service Access
-        Point to send EPS Session Management messages to the
-        EPS Mobility Management sublayer.
+Description NAS ESM procedure call manager
 
 *****************************************************************************/
-#ifndef __ESM_SEND_H__
-#define __ESM_SEND_H__
+#ifndef FILE_NAS_ESM_PROC_SEEN
+#define FILE_NAS_ESM_PROC_SEEN
 
 #include "common_defs.h"
-#include "EsmStatus.h"
-
-#include "PdnConnectivityReject.h"
-#include "PdnDisconnectReject.h"
-#include "BearerResourceAllocationReject.h"
-#include "BearerResourceModificationReject.h"
-
-#include "ActivateDefaultEpsBearerContextRequest.h"
-#include "ActivateDedicatedEpsBearerContextRequest.h"
-#include "ModifyEpsBearerContextRequest.h"
-#include "DeactivateEpsBearerContextRequest.h"
-
-#include "EsmInformationRequest.h"
+#include "mme_config.h"
+#include "networkDef.h"
+#include "esm_sapDef.h"
 
 /****************************************************************************/
 /*********************  G L O B A L    C O N S T A N T S  *******************/
@@ -73,39 +61,39 @@ Description Defines functions executed at the ESM Service Access
 
 /*
  * --------------------------------------------------------------------------
- * Functions executed by the MME to send ESM message to the UE
+ *          NAS procedures triggered by the user
  * --------------------------------------------------------------------------
  */
-int esm_send_esm_information_request (pti_t pti, ebi_t ebi, esm_information_request_msg * msg);
 
-int esm_send_status(pti_t pti, ebi_t ebi, esm_status_msg *msg, int esm_cause);
 
 /*
- * Transaction related messages
- * ----------------------------
+ * --------------------------------------------------------------------------
+ *      NAS procedures triggered by the network
+ * --------------------------------------------------------------------------
  */
-int esm_send_pdn_connectivity_reject(pti_t pti, pdn_connectivity_reject_msg *msg,
-                                     int esm_cause);
+void nas_stop_esm_timer(mme_ue_s1ap_id_t ue_id, nas_timer_t * const nas_timer);
 
-int esm_send_pdn_disconnect_reject(pti_t pti, pdn_disconnect_reject_msg *msg,
-                                   int esm_cause);
-
+int nas_proc_establish_ind(const mme_ue_s1ap_id_t ue_id,
+                            const tai_t originating_tai,
+                            const ecgi_t ecgi,
+                            const as_cause_t as_cause,
+                            STOLEN_REF bstring *msg);
 /*
- * Messages related to EPS bearer contexts
- * ---------------------------------------
+ * --------------------------------------------------------------------------
+ *      NAS ESM procedures triggered by the mme applicative layer
+ * --------------------------------------------------------------------------
  */
-int esm_send_activate_default_eps_bearer_context_request(pti_t pti, ebi_t ebi,
-    activate_default_eps_bearer_context_request_msg *msg, bstring apn,
-    const protocol_configuration_options_t *pco, int pdn_type, bstring pdn_addr,
-    const EpsQualityOfService *qos, int esm_cause);
+/** Messages sent by the EMM layer (directly from UE). */
+int nas_esm_proc_data_ind (itti_nas_esm_data_ind_t * esm_data_ind);
+int nas_esm_proc_esm_detach(itti_nas_esm_detach_ind_t * esm_detach);
 
-int esm_send_activate_dedicated_eps_bearer_context_request(pti_t pti, ebi_t ebi,
-    activate_dedicated_eps_bearer_context_request_msg *msg, ebi_t linked_ebi,
-    const EpsQualityOfService *qos,
-    traffic_flow_template_t *tft,
-    protocol_configuration_options_t *pco);
+/** Messages triggered by the core network. */
+int nas_esm_proc_pdn_config_res (esm_cn_pdn_config_res_t * emm_cn_pdn_config_res);
+int nas_esm_proc_pdn_config_fail (esm_cn_pdn_config_fail_t * emm_cn_pdn_config_fail);
+int nas_esm_proc_pdn_connectivity_res(esm_cn_pdn_connectivity_res_t *esm_cn_pdn_connectivity_rsp);
 
-int esm_send_deactivate_eps_bearer_context_request(pti_t pti, ebi_t ebi,
-    deactivate_eps_bearer_context_request_msg *msg, int esm_cause);
+int nas_esm_proc_activate_eps_bearer_ctx(esm_eps_activate_eps_bearer_ctx_req_t * esm_cn_activate);
+int nas_esm_proc_modify_eps_bearer_ctx(esm_eps_modify_esm_bearer_ctxs_req_t * esm_cn_modify);
+int nas_esm_proc_deactivate_eps_bearer_ctx(esm_eps_deactivate_eps_bearer_ctx_req_t * esm_cn_deactivate);
 
-#endif /* __ESM_SEND_H__*/
+#endif /* FILE_NAS_PROC_SEEN*/
