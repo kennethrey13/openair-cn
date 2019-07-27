@@ -1,0 +1,160 @@
+/* Command line utility to create GTP link */
+
+/* (C) 2014 by sysmocom - s.f.m.c. GmbH
+ * (C) 2016 by Pablo Neira Ayuso <pablo@netfilter.org>
+ *
+ * Author: Pablo Neira Ayuso <pablo@gnumonks.org>
+ *
+ * All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <time.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <libmnl/libmnl.h>
+#include <linux/if.h>
+#include <linux/if_link.h>
+#include <linux/rtnetlink.h>
+
+#include <linux/gtp.h>
+#include <linux/if_link.h>
+
+#include <libgtpnl/gtpnl.h>
+
+int main(int argc, char *argv[])
+{
+	struct mnl_socket *nl;
+	char buf[MNL_SOCKET_BUFFER_SIZE];
+	struct nlmsghdr *nlh;
+	struct ifinfomsg *ifm;
+	int ret;
+	unsigned int seq, portid;
+	struct nlattr *nest, *nest2;
+
+	if (argc != 3) {
+		printf("Usage: %s <add|del> <device>\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	if (!strcmp(argv[1], "del")) {
+		printf("destroying gtp interface...\n");
+		if (gtp_dev_destroy(argv[2]) < 0)
+			perror("gtp_dev_destroy");
+
+		return 0;
+	}
+
+	nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type	= RTM_NEWLINK;
+	nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL |NLM_F_ACK;
+	nlh->nlmsg_seq = seq = time(NULL);
+	ifm = mnl_nlmsg_put_extra_header(nlh, sizeof(*ifm));
+	ifm->ifi_family = AF_INET;
+	ifm->ifi_change |= IFF_UP;
+	ifm->ifi_flags |= IFF_UP;
+
+	int fd1 = socket(AF_INET, SOCK_DGRAM, 0);
+	int fd2 = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in sockaddr_fd1 = {
+		.sin_family	= AF_INET,
+		.sin_port	= htons(3386),
+		.sin_addr	= {
+			.s_addr 	= INADDR_ANY,
+		},
+	};
+	struct sockaddr_in sockaddr_fd2 = {
+		.sin_family	= AF_INET,
+		.sin_port	= htons(2152),
+		.sin_addr	= {
+			.s_addr 	= INADDR_ANY,
+		},
+	};
+
+	if (bind(fd1, (struct sockaddr *) &sockaddr_fd1,
+		 sizeof(sockaddr_fd1)) < 0) {
+		perror("bind");
+		exit(EXIT_FAILURE);
+	}
+	if (bind(fd2, (struct sockaddr *) &sockaddr_fd2,
+		 sizeof(sockaddr_fd2)) < 0) {
+		perror("bind");
+		exit(EXIT_FAILURE);
+	}
+
+	mnl_attr_put_str(nlh, IFLA_IFNAME, argv[2]);
+	nest = mnl_attr_nest_start(nlh, IFLA_LINKINFO);
+	mnl_attr_put_str(nlh, IFLA_INFO_KIND, "gtp");
+	nest2 = mnl_attr_nest_start(nlh, IFLA_INFO_DATA);
+	mnl_attr_put_u32(nlh, IFLA_GTP_FD0, fd1);
+	mnl_attr_put_u32(nlh, IFLA_GTP_FD1, fd2);
+	mnl_attr_put_u32(nlh, IFLA_GTP_PDP_HASHSIZE, 131072);
+	mnl_attr_nest_end(nlh, nest2);
+	mnl_attr_nest_end(nlh, nest);
+
+	nl = mnl_socket_open(NETLINK_ROUTE);
+	if (nl == NULL) {
+		perror("mnl_socket_open");
+		exit(EXIT_FAILURE);
+	}
+
+	if (mnl_socket_bind(nl, 0, MNL_SOCKET_AUTOPID) < 0) {
+		perror("mnl_socket_bind");
+		exit(EXIT_FAILURE);
+	}
+	portid = mnl_socket_get_portid(nl);
+
+	mnl_nlmsg_fprintf(stdout, nlh, nlh->nlmsg_len,
+			  sizeof(struct ifinfomsg));
+
+	if (mnl_socket_sendto(nl, nlh, nlh->nlmsg_len) < 0) {
+		perror("mnl_socket_send");
+		exit(EXIT_FAILURE);
+	}
+
+	ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
+	if (ret == -1) {
+		perror("read");
+		exit(EXIT_FAILURE);
+	}
+
+	ret = mnl_cb_run(buf, ret, seq, portid, NULL, NULL);
+	if (ret == -1){
+		perror("callback");
+		exit(EXIT_FAILURE);
+	}
+
+	mnl_socket_close(nl);
+
+	fprintf(stderr, "WARNING: attaching dummy socket descriptors. Keep "
+			"this process running for testing purposes.\n");
+
+	while (1) {
+		struct sockaddr_in addr;
+		socklen_t len = sizeof(addr);
+
+		ret = recvfrom(fd1, buf, sizeof(buf), 0,
+			       (struct sockaddr *)&addr, &len);
+		printf("received %d bytes via UDP socket\n", ret);
+	}
+
+	return 0;
+}
