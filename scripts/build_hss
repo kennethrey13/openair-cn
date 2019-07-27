@@ -47,6 +47,7 @@ function help()
   echo_error "  -F, --force                               No interactive script for installation of software packages."
   echo_error "  -h, --help                                Print this help."
   echo_error "  -i, --check-installed-software            Check installed software packages necessary to build and run HSS (support $SUPPORTED_DISTRO)."
+  echo_error "  -I, --install                             Install to /usr/local/bin (otherwise binary goes in ./BUILD"
   echo_error "                                            If filled, then OPc key in table users for all subscribers (IMSI) will be computed/updated."
   echo_error "  -v, --verbose                             Build process verbose."
 }
@@ -60,6 +61,7 @@ function main()
   local -i verbose=0
   local -i var_check_install_oai_software=0
   local -i force=0
+  local -i install=0
   local    cmake_args=" "
   local    make_args="-j`nproc`"
   local    realm=""
@@ -95,6 +97,11 @@ function main()
         echo "Check installed software packages necessary to build and run HSS (support $SUPPORTED_DISTRO):"
         set_openair_env
         var_check_install_oai_software=1
+        shift;
+        ;;
+      -I | --install)
+        install=1
+        echo "Installing into /usr/local/bin after compilation"
         shift;
         ;;
       -v | --verbose)
@@ -166,8 +173,13 @@ function main()
   [[ $? -ne 0 ]] && return $?
   chmod -f 777 *
 
-  $SUDO killall -q oai_hss
-  $SUDO cp -upv $OPENAIRCN_DIR/build/hss/build/oai_hss /usr/local/bin/ && echo_success "oai_hss installed"
+  if [ $install -ne 0 ]; then
+      $SUDO killall -q oai_hss
+      $SUDO cp -upv $OPENAIRCN_DIR/build/hss/build/oai_hss /usr/local/bin/ && echo_success "oai_hss installed"
+  else
+    mkdir -p $OPENAIRCN_DIR/BUILD
+    cp -upv $OPENAIRCN_DIR/build/hss/build/oai_hss $OPENAIRCN_DIR/BUILD/oai_hss
+  fi
   return 0
 }
 
