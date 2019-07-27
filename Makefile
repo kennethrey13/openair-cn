@@ -1,0 +1,90 @@
+
+USER_EMAIL=$(shell git config --get user.email)
+
+EPC_VERSION=0.11.0
+DB_VERSION=0.9.11
+OAI_DEPS_VERSION=0.9.10
+TARGET_DIR=./BUILD/
+
+build_deps:
+	sudo apt-get install autoconf automake bison build-essential cmake cmake-curses-gui doxygen doxygen-gui flex pkg-config git libconfig-dev libgcrypt11-dev libidn2-0-dev libidn11-dev default-libmysqlclient-dev libpthread-stubs0-dev libsctp1 libsctp-dev libssl-dev libtool openssl nettle-dev nettle-bin php python-pexpect castxml guile-2.0-dev libgmp-dev libhogweed4 libgtk-3-dev libxml2 libxml2-dev mscgen check python libgnutls28-dev python-dev unzip libmnl-dev libevent-dev ruby ruby-dev rubygems
+	sudo gem install --no-ri --no-rdoc fpm
+
+target:
+	mkdir -p $(TARGET_DIR)
+
+hss: target
+	./oaienv; ./scripts/build_hss -C
+
+mme: target
+	./oaienv; ./scripts/build_mme -C
+
+spgw: target
+	./oaienv; ./scripts/build_spgw -C
+
+epc: hss mme spgw
+	fpm --input-type dir \
+		--output-type deb \
+		--force \
+		--vendor uw-ictd \
+		--config-files /usr/local/etc/oai/hss.conf \
+		--config-files /usr/local/etc/oai/mme.conf \
+		--config-files /usr/local/etc/oai/spgw.conf \
+		--config-files /usr/bin/spgw_nat.sh \
+		--config-files /usr/local/etc/oai/freeDiameter/acl.conf \
+		--config-files /usr/local/etc/oai/freeDiameter/hss_fd.conf \
+		--config-files /usr/local/etc/oai/freeDiameter/mme_fd.conf \
+		--maintainer sevilla@cs.washington.edu \
+		--description "The OpenAirInterface EPC" \
+		--url "https://github.com/uw-ictd/openair-cn" \
+		--deb-compression xz \
+		--name colte-epc \
+		--version $(EPC_VERSION) \
+		--package $(TARGET_DIR) \
+		--depends 'default-libmysqlclient-dev, libconfig9, libsctp1, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-db' \
+		--after-install ./package/epc/postinst \
+		--after-remove ./package/epc/postrm \
+		./BUILD/oai_hss=/usr/bin/ \
+		./BUILD/mme=/usr/bin/ \
+		./BUILD/spgw=/usr/bin/ \
+		./package/epc/spgw_nat.sh=/usr/bin/ \
+		./package/epc/hss.conf=/usr/local/etc/oai/hss.conf \
+		./package/epc/mme.conf=/usr/local/etc/oai/mme.conf \
+		./package/epc/spgw.conf=/usr/local/etc/oai/spgw.conf \
+		./package/epc/colte-epc.service=/etc/systemd/system/colte-epc.service \
+		./package/epc/colte-hss.service=/etc/systemd/system/colte-hss.service \
+		./package/epc/colte-mme.service=/etc/systemd/system/colte-mme.service \
+		./package/epc/colte-spgw.service=/etc/systemd/system/colte-spgw.service \
+		./package/epc/colte-spgw_nat.service=/etc/systemd/system/colte-spgw_nat.service \
+		./package/epc/oai=/usr/local/etc/colte/oai \
+		./package/epc/freeDiameter=/usr/local/etc/oai/
+
+db: target
+	fpm --input-type dir \
+		--output-type deb \
+		--force \
+		--vendor uw-ictd \
+		--maintainer sevilla@cs.washington.edu \
+		--description "Sample database for use with CoLTE" \
+		--url "https://github.com/uw-ictd/colte" \
+		--deb-compression xz \
+		--name colte-db \
+		--version $(DB_VERSION) \
+		--package $(TARGET_DIR) \
+		--depends 'mysql-server, mysql-client' \
+		--after-install ./package/db/postinst \
+		--after-remove ./package/db/postrm \
+		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
+
+all: epc db
+
+package-clean:
+	rm colte*\.deb
+
+build-clean:
+	echo "build-clean does nothing right now..."
+	# ./scripts/build_hss -c
+	# ./scripts/build_mme -c
+	# ./scripts/build_spgw -c
+
+clean: package-clean build-clean
