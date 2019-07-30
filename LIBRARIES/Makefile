@@ -48,7 +48,6 @@ freediameter_deb:
 		--maintainer sevilla@cs.washington.edu \
 		--description "freeDiameter 1.2 version known to work with CoLTE" \
 		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
 		--name colte-freediameter \
 		--version $(FD_VERSION) \
 		--package $(BUILD_DIR) \
@@ -62,7 +61,6 @@ asn1c_deb:
 		--maintainer sevilla@cs.washington.edu \
 		--description "asn1c fork/patch that is known to work with CoLTE" \
 		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
 		--name colte-asn1c \
 		--version $(ASN1C_VERSION) \
 		--package $(BUILD_DIR) \
@@ -76,7 +74,6 @@ gtpnl_deb:
 		--maintainer sevilla@cs.washington.edu \
 		--description "libgtpnl fork that is known to work with CoLTE" \
 		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
 		--name colte-libgtpnl \
 		--version $(GTPNL_VERSION) \
 		--package $(BUILD_DIR) \
@@ -90,7 +87,6 @@ lfds_deb:
 		--maintainer sevilla@cs.washington.edu \
 		--description "lfds fork/patch that is known to work with CoLTE" \
 		--url "https://github.com/uw-ictd/colte" \
-		--deb-compression xz \
 		--name colte-liblfds \
 		--version $(LFDS_VERSION) \
 		--package $(BUILD_DIR) \
