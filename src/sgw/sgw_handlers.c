@@ -689,7 +689,7 @@ sgw_handle_sgi_endpoint_updated (
 
       if (rv < 0) {
         OAILOG_ERROR (LOG_SPGW_APP, "SMS: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
-        rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+        rv = gtp_tunnel_ops->del_tunnel(ue, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
         if (rv < 0) {
           OAILOG_ERROR (LOG_SPGW_APP, "SMS NESTED: got error %d tearing down GTP tunnel in-between setups.\n", rv);
         }
@@ -1086,7 +1086,7 @@ static void sgw_release_all_enb_related_information (sgw_eps_bearer_ctxt_t * con
   OAILOG_FUNC_IN(LOG_SPGW_APP);
   if ( eps_bearer_ctxt) {
     /* SMS: Hotfix for bug that isn't tearing down GTP tunnels when idle disconnect occurs */
-    rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt->enb_teid_S1u);
+    rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt->paa.ipv4_address, eps_bearer_ctxt->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt->enb_teid_S1u);
     if (rv < 0) {
       OAILOG_ERROR (LOG_SPGW_APP, "ERROR in tearing down old TUNNEL err=%d\n", rv);
     }
@@ -1320,7 +1320,7 @@ sgw_handle_create_bearer_response (
 #endif
                     if (rv < 0) {
                       OAILOG_ERROR (LOG_SPGW_APP, "SMS2: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
-                      rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
+                      rv = gtp_tunnel_ops->del_tunnel(ue, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
                       if (rv < 0) {
                         OAILOG_ERROR (LOG_SPGW_APP, "SMS2 NESTED: got error %d tearing down GTP tunnel in-between setups.\n", rv);
                       }

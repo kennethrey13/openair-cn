@@ -20,13 +20,13 @@ target:
 	mkdir -p $(TARGET_DIR)
 
 hss: target
-	./oaienv; ./scripts/build_hss -C
+	./oaienv; ./scripts/build_hss
 
 mme: target
-	./oaienv; ./scripts/build_mme -C
+	./oaienv; ./scripts/build_mme
 
 spgw: target
-	./oaienv; ./scripts/build_spgw -C
+	./oaienv; ./scripts/build_spgw
 
 epc: hss mme spgw
 	fpm --input-type dir \
