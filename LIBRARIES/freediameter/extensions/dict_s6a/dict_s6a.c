@@ -613,6 +613,19 @@ int dict_s6a_init(char * conffile)
 			CHECK_dict_new( DICT_AVP, &data , NULL, NULL);
 		}
 
+		/* CLR-Flags - 3GPP TS 29.272  #7.3.152 */
+		{
+			struct dict_avp_data data = {
+				1638,				/* Code */
+                VENDOR_3GPP_Id,     /* Vendor */
+				"CLR-Flags",			/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY,	/* Fixed flags */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY,		/* Fixed flag values */+				AVP_TYPE_UNSIGNED32		/* base type of data */
+			};
+
+			CHECK_dict_new( DICT_AVP, &data , NULL, NULL);
+		}		
+
 		/* Visited-PLMN-Id AVP - 3GPP TS 29.272  #7.3.9 */
 		{
 			struct dict_avp_data data = {
