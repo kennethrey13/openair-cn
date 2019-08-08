@@ -682,11 +682,6 @@ sgw_handle_sgi_endpoint_updated (
 
 #if ENABLE_LIBGTPNL
       rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, resp_pP->eps_bearer_id);
-#elif ENABLE_OPENFLOW
-      imsi_t imsi = new_bearer_ctxt_info_p->sgw_eps_bearer_context_information.imsi;
-      rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, resp_pP->eps_bearer_id, imsi, pgw_pcef_get_rule_by_id(SDF_ID_NGBR_DEFAULT));
-#endif
-
       if (rv < 0) {
         OAILOG_ERROR (LOG_SPGW_APP, "SMS: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
         rv = gtp_tunnel_ops->del_tunnel(ue, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
@@ -700,6 +695,11 @@ sgw_handle_sgi_endpoint_updated (
           OAILOG_ERROR (LOG_SPGW_APP, "SMS NESTED: successfully setup GTP tunnel on second attempt (after teardown).\n");
         }
       }
+
+#elif ENABLE_OPENFLOW
+      imsi_t imsi = new_bearer_ctxt_info_p->sgw_eps_bearer_context_information.imsi;
+      rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, resp_pP->eps_bearer_id, imsi, pgw_pcef_get_rule_by_id(SDF_ID_NGBR_DEFAULT));
+#endif
 
 #if ENABLE_LIBGTPNL
       bstring marking_command = bformat(
@@ -1085,11 +1085,14 @@ static void sgw_release_all_enb_related_information (sgw_eps_bearer_ctxt_t * con
 
   OAILOG_FUNC_IN(LOG_SPGW_APP);
   if ( eps_bearer_ctxt) {
+
+#if ENABLE_LIBGTPNL
     /* SMS: Hotfix for bug that isn't tearing down GTP tunnels when idle disconnect occurs */
     rv = gtp_tunnel_ops->del_tunnel(eps_bearer_ctxt->paa.ipv4_address, eps_bearer_ctxt->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt->enb_teid_S1u);
     if (rv < 0) {
       OAILOG_ERROR (LOG_SPGW_APP, "ERROR in tearing down old TUNNEL err=%d\n", rv);
     }
+#endif
 
     memset (&eps_bearer_ctxt->enb_ip_address_S1u, 0, sizeof (eps_bearer_ctxt->enb_ip_address_S1u));
     eps_bearer_ctxt->enb_teid_S1u = INVALID_TEID;
@@ -1313,10 +1316,6 @@ sgw_handle_create_bearer_response (
                   if (spgw_config.pgw_config.use_gtp_kernel_module) {
 #if ENABLE_LIBGTPNL
                     rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, eps_bearer_ctxt_p->eps_bearer_id);
-#elif ENABLE_OPENFLOW
-                    imsi_t imsi = ctx_p->sgw_eps_bearer_context_information.imsi;
-                    rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, eps_bearer_ctxt_p->eps_bearer_id, imsi, pgw_pcef_get_rule_by_id(pgw_ni_cbr_proc->sdf_id));
-#endif
                     if (rv < 0) {
                       OAILOG_ERROR (LOG_SPGW_APP, "SMS2: got error %d setting up GTP tunnel; tearing down and trying again.\n", rv);
                       rv = gtp_tunnel_ops->del_tunnel(ue, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u);
@@ -1331,6 +1330,10 @@ sgw_handle_create_bearer_response (
                       }
                     }
 
+#elif ENABLE_OPENFLOW
+                    imsi_t imsi = ctx_p->sgw_eps_bearer_context_information.imsi;
+                    rv = gtp_tunnel_ops->add_tunnel(ue, enb, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up, eps_bearer_ctxt_p->enb_teid_S1u, eps_bearer_ctxt_p->eps_bearer_id, imsi, pgw_pcef_get_rule_by_id(pgw_ni_cbr_proc->sdf_id));
+#endif
                     if (rv < 0) {
                       OAILOG_INFO (LOG_SPGW_APP, "Failed to setup EPS bearer id %u tunnel " TEID_FMT " (eNB) <-> (SGW) " TEID_FMT "\n",
                           eps_bearer_ctxt_p->eps_bearer_id, eps_bearer_ctxt_p->enb_teid_S1u, eps_bearer_ctxt_p->s_gw_teid_S1u_S12_S4_up);
