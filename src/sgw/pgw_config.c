@@ -135,7 +135,7 @@ int pgw_config_process (pgw_config_t * config_pP)
     if (config_pP->masquerade_SGI) {
       async_system_command (TASK_ASYNC_SYSTEM, PGW_ABORT_ON_ERROR, "iptables -t nat -I POSTROUTING -m iprange --src-range %s-%s -o %s  ! --protocol sctp -j SNAT --to-source %s",
           inet_ntoa(config_pP->ue_pool_range_low[i]), inet_ntoa(config_pP->ue_pool_range_high[i]),
-          bdata(config_pP->ipv4.if_name_SGI), str_sgi);
+          bdata(config_pP->ipv4.if_name_SGI), inet_ntoa (*((struct in_addr *)&config_p->ipv4.SGI)));
       }
 
     if (config_pP->ue_tcp_mss_clamp) {
