@@ -97,6 +97,12 @@ int pgw_config_process (pgw_config_t * config_pP)
     OAI_FPRINTF_ERR("CRITICAL: Failed to probe S5-S8 inet addr\n");
   }
 
+  uint32_t min_mtu = config_pP->ipv4.mtu_SGI;
+  // 36 = GTPv1-U min header size
+  if ((config_pP->ipv4.mtu_S5_S8 - 36) < min_mtu) {
+    min_mtu = config_pP->ipv4.mtu_S5_S8 - 36;
+  }
+
   for (int i = 0; i < config_pP->num_ue_pool; i++) {
     STAILQ_INIT (&config_pP->ue_pool_excluded[i]);
     // TODO ue_pool_excluded ???
@@ -135,7 +141,7 @@ int pgw_config_process (pgw_config_t * config_pP)
     if (config_pP->masquerade_SGI) {
       async_system_command (TASK_ASYNC_SYSTEM, PGW_ABORT_ON_ERROR, "iptables -t nat -I POSTROUTING -m iprange --src-range %s-%s -o %s  ! --protocol sctp -j SNAT --to-source %s",
           inet_ntoa(config_pP->ue_pool_range_low[i]), inet_ntoa(config_pP->ue_pool_range_high[i]),
-          bdata(config_pP->ipv4.if_name_SGI), inet_ntoa (*((struct in_addr *)&config_p->ipv4.SGI)));
+          bdata(config_pP->ipv4.if_name_SGI), inet_ntoa (*((struct in_addr *)&config_pP->ipv4.SGI)));
       }
 
     if (config_pP->ue_tcp_mss_clamp) {
@@ -146,12 +152,6 @@ int pgw_config_process (pgw_config_t * config_pP)
           inet_ntoa(config_pP->ue_pool_range_low[i]), inet_ntoa(config_pP->ue_pool_range_high[i]), min_mtu - 40);
     }
 #endif
-  }
-
-  uint32_t min_mtu = config_pP->ipv4.mtu_SGI;
-  // 36 = GTPv1-U min header size
-  if ((config_pP->ipv4.mtu_S5_S8 - 36) < min_mtu) {
-    min_mtu = config_pP->ipv4.mtu_S5_S8 - 36;
   }
 
   if (config_pP->pcef.enabled) {
