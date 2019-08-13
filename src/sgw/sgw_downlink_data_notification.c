@@ -35,8 +35,9 @@
 #include "sgw_context_manager.h"
 #include "gtpv1_u_messages_types.h"
 #include "sgw.h"
+#if ENABLE_OPENFLOW
 #include "ControllerMain.h"
-
+#endif
 
 #ifdef __cplusplus
 extern "C" {
