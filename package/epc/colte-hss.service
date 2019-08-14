@@ -5,7 +5,7 @@ Requires=mysql.service
 PartOf=colte-epc.service
 
 [Service]
-ExecStart=/usr/bin/oai_hss
+ExecStart=/usr/bin/oai_hss -c /usr/local/etc/oai/hss.conf
 Restart=always
 RestartSec=2
 User=root

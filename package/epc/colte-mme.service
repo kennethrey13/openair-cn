@@ -6,7 +6,7 @@ PartOf=colte-epc.service
 
 [Service]
 ExecStartPre=/bin/bash -c "sleep 5"
-ExecStart=/usr/bin/mme
+ExecStart=/usr/bin/mme -c /usr/local/etc/oai/mme.conf
 Restart=always
 RestartSec=5
 User=root

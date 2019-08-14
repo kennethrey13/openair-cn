@@ -6,7 +6,7 @@ Wants=colte-spgw_nat.service
 PartOf=colte-epc.service colte-mme.service
 
 [Service]
-ExecStart=/usr/bin/spgw
+ExecStart=/usr/bin/spgw -c /usr/local/etc/oai/spgw.conf
 Restart=always
 RestartSec=2
 User=root
