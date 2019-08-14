@@ -67,6 +67,7 @@ int sgw_notify_downlink_data(const struct in_addr ue_ip, const ebi_t ebi)
 }
 
 //------------------------------------------------------------------------------
+#if ENABLE_OPENFLOW
 int
 sgw_handle_s11_downlink_data_notification_ack (
   const itti_s11_downlink_data_notification_acknowledge_t * const ack)
@@ -148,7 +149,7 @@ sgw_handle_s11_downlink_data_notification_failure_ind (
   OAILOG_DEBUG (LOG_SPGW_APP, "DL Data Notification Ack: Failed to get EPC Bearer Context Information\n");
   OAILOG_FUNC_RETURN(LOG_SPGW_APP, RETURNerror);
 }
-
+#endif // ENABLE_OPENFLOW
 
 #ifdef __cplusplus
 }
