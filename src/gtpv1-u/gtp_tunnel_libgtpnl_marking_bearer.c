@@ -111,7 +111,7 @@ int libgtpnl_init(struct in_addr *ue_net, struct in_addr *ue_netmask, int mtu, i
 
   // SMS: calculate netmask back to CIDR
   uint32_t mask = 0;
-  uint32_t tmp = ntohl(ue_netmask.s_addr);
+  uint32_t tmp = ntohl(ue_netmask->s_addr);
   while (tmp) {
     tmp << 1;
     mask++;
