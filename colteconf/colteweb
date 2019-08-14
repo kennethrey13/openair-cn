@@ -1,0 +1,15 @@
+#!/bin/bash
+
+playbook=/usr/bin/colte/webconf.yml
+
+#playbook=./colte/colte_reconf.yml
+
+if [ "$EUID" -ne 0 ]; then
+	echo "colteweb: Must run as root!"
+	exit 1
+fi
+
+echo "Updating configuration..."
+ansible-playbook -v -i "localhost," -c local $playbook
+echo "Configuration updated!"
+exit 0
