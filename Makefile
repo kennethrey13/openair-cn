@@ -78,12 +78,12 @@ conf: dir
 		--version $(CONF_VERSION) \
 		--package $(TARGET_DIR) \
 		--depends 'ansible, python-mysqldb, colte-db' \
-		--after-install ./conf/postinst \
-		--after-remove ./conf/postrm \
-		./conf/colteconf=/usr/bin/ \
-		./conf/coltedb=/usr/bin/ \
-		./conf/colte=/usr/bin/ \
-		./conf/config.yml=/usr/local/etc/colte/config.yml
+		--after-install ./colteconf/postinst \
+		--after-remove ./colteconf/postrm \
+		./colteconf/colteconf=/usr/bin/ \
+		./colteconf/coltedb=/usr/bin/ \
+		./colteconf/colte=/usr/bin/ \
+		./colteconf/config.yml=/usr/local/etc/colte/config.yml
 
 db: dir
 	fpm --input-type dir \
