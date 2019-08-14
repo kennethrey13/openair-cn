@@ -314,6 +314,10 @@ include_directories("${SRC_TOP_DIR}/nas/api/network")
 include_directories("${SRC_TOP_DIR}/nas/api/mme")
 include_directories("${SRC_TOP_DIR}/mme_app")
 
+if(ENABLE_OPENFLOW)
+set(COMPILE_OPENFLOW OPENFLOW_CONTROLLER)
+endif(ENABLE_OPENFLOW)
+
 add_executable(spgw
   ${SRC_TOP_DIR}/oai_sgw/oai_sgw.c
   ${SRC_TOP_DIR}/oai_sgw/common/common_types.c
@@ -322,7 +326,7 @@ add_executable(spgw
 target_link_libraries (spgw asan
       -Wl,--start-group
       BSTR CN_UTILS GTPV1U GTPV2C HASHTABLE 
-      SGW S11_SGW UDP_SERVER ${MSC_LIB} OPENFLOW_CONTROLLER ITTI  3GPP_TYPES ${MySQL_LIBRARY}
+      SGW S11_SGW UDP_SERVER ${MSC_LIB} ${COMPILE_OPENFLOW} ITTI  3GPP_TYPES ${MySQL_LIBRARY}
       -Wl,--end-group
       pthread m rt ${LFDS} ${CONFIG_LIBRARIES} event
       )
