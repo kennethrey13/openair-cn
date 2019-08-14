@@ -109,6 +109,14 @@ int libgtpnl_init(struct in_addr *ue_net, struct in_addr *ue_netmask, int mtu, i
   }
   bdestroy(system_cmd);
 
+  // SMS: calculate netmask back to CIDR
+  uint32_t mask = 0;
+  uint32_t tmp = ntohl(ue_netmask.s_addr);
+  while (tmp) {
+    tmp << 1;
+    mask++;
+  };
+
   struct in_addr ue_gw;
   ue_gw.s_addr = ue_net->s_addr | htonl(1);
   system_cmd = bformat ("ip addr add %s/%u dev %s", inet_ntoa(ue_gw), mask, GTP_DEVNAME);
