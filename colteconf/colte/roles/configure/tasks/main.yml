@@ -117,7 +117,8 @@
     - {field: "SGW_INTERFACE_NAME_FOR_S1U_S12_S4_UP", line: "        SGW_INTERFACE_NAME_FOR_S1U_S12_S4_UP         = \"{{ enb_iface }}\";"}
     - {field: "SGW_IPV4_ADDRESS_FOR_S1U_S12_S4_UP", line: "        SGW_IPV4_ADDRESS_FOR_S1U_S12_S4_UP         = \"{{ enb_iface_addr }}\";"}
     - {field: "PGW_INTERFACE_NAME_FOR_SGI", line: "        PGW_INTERFACE_NAME_FOR_SGI            = \"{{ wan_iface }}\";"}
-    - {field: "IPV4_LIST", line: "        IPV4_LIST = (\"{{ lte_subnet }}\");"}
+    - {field: "PGW_IPV4_ADDRESS_FOR_SGI", line: "        PGW_IPV4_ADDRESS_FOR_SGI            = \"{{ wan_iface_addr }}\";"}
+    - {field: "IPV4_LIST", line: "        IPV4_LIST = (\"{{ lte_subnet_bottom }} - {{ lte_subnet_top }}\"); # STRING, IP RANGE, YOUR NETWORK CONFIG HERE."}
     - {field: 'MYSQL_user', line: '    MYSQL_user   = "{{ mysql_user }}";'}
     - {field: 'MYSQL_pass', line: '    MYSQL_pass   = "{{ mysql_password }}";'}
     - {field: 'MYSQL_db', line: '    MYSQL_db   = "{{ mysql_db }}";'}

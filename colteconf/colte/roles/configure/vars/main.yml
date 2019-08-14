@@ -10,6 +10,7 @@ mysql_db: colte_db
 enb_iface: eth0
 enb_iface_addr: 1.2.3.4/24
 wan_iface: eth0
+wan_iface_addr: eth0
 max_enb: 4
 max_ue: 32
 mcc: 460
@@ -24,7 +25,8 @@ mnc: 66
 #local_dns: false
 dnssec: 8.8.4.4
 dns: 8.8.8.8
-lte_subnet: 192.168.151.0/24
+lte_subnet_bottom: 192.168.151.0
+lte_subnet_top: 192.168.151.255
 #max_ul: 50000000
 #max_dl: 100000000
 
