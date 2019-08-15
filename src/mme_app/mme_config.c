@@ -818,7 +818,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
         bstrListDestroy(list);
         bdestroy_wrapper(&cidr);
         in_addr_var.s_addr = config_pP->ipv4.s10.s_addr;
-        OAILOG_INFO (LOG_MME_APP, "Parsing configuration file found S10: %s/%d on %s\n",
+        OAI_FPRINTF_INFO ("Parsing configuration file found S10: %s/%d on %s\n",
                        inet_ntoa (in_addr_var), config_pP->ipv4.netmask_s10, bdata(config_pP->ipv4.if_name_s10));
       }
     }
@@ -959,7 +959,7 @@ static int mme_config_parse_file (mme_config_t * config_pP)
           config_pP->e_dns_emulation.interface_type[i] = S11_SGW_GTP_C;
           bstrListDestroy(list);
           bdestroy_wrapper(&cidr);
-          OAILOG_INFO (LOG_MME_APP, "Parsing configuration file found S-GW S11: %s\n", inet_ntoa (config_pP->e_dns_emulation.service_ip_addr[i]));
+          OAI_FPRINTF_INFO ("Parsing configuration file found S-GW S11: %s\n", inet_ntoa (config_pP->e_dns_emulation.service_ip_addr[i]));
         }
         /** Check S11 Endpoint (service="x-3gpp-mme:x-s10"). */
         if ((config_setting_lookup_string (sub2setting, MME_CONFIG_STRING_PEER_MME_IPV4_ADDRESS_FOR_S10, (const char **)&mme_ip_address_for_s10)
@@ -1233,11 +1233,11 @@ mme_config_parse_opt_line (
     if (config_file) {
       config_pP->config_file            = bfromcstr(config_file);
     } else {
-      OAILOG_ERROR (LOG_CONFIG, "No config file provided through arg -c, or env variable CONFIG_FILE, exiting\n");
+      OAI_FPRINTF_ERR ("No config file provided through arg -c, or env variable CONFIG_FILE, exiting\n");
       return RETURNerror;
     }
   }
-  OAILOG_DEBUG (LOG_CONFIG, "Config file is %s\n", config_file);
+  OAI_FPRINTF_INFO ("Config file is %s\n", config_pP->config_file);
   /*
    * Parse the configuration file using libconfig
    */
