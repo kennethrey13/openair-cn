@@ -96,6 +96,7 @@ static void *sgw_intertask_interface (void *args_p)
       }
       break;
 
+#if ENABLE_OPENFLOW
     case S11_DOWNLINK_DATA_NOTIFICATION_ACKNOWLEDGE:{
       sgw_handle_s11_downlink_data_notification_ack (S11_DOWNLINK_DATA_NOTIFICATION_ACKNOWLEDGE(received_message_p));
     }
@@ -105,6 +106,7 @@ static void *sgw_intertask_interface (void *args_p)
       sgw_handle_s11_downlink_data_notification_failure_ind (S11_DOWNLINK_DATA_NOTIFICATION_FAILURE_INDICATION(received_message_p));
     }
     break;
+#endif
 
     case GTPV1U_UPDATE_TUNNEL_RESP:{
         sgw_handle_gtpv1uUpdateTunnelResp (GTPV1U_UPDATE_TUNNEL_RESP(received_message_p));

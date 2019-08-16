@@ -55,7 +55,9 @@
 #include "pgw_config.h"
 #include "spgw_config.h"
 #include "gtpv1u_sgw_defs.h"
+#if ENABLE_OPENFLOW
 #include "ControllerMain.h"
+#endif
 #include "async_system.h"
 #include "sgw.h"
 
