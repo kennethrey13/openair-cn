@@ -1,0 +1,13 @@
+---
+# REMEMBER TO CALL "sudo colteweb" AFTER CHANGING THIS FILE!
+
+# locally-hosted webservices
+network_name: bokondini
+#local_dns: false
+#web_services: true
+#media_server: false
+#wikipedia: false
+#mapping_server: false
+#chat_server: false
+#wiki: false
+

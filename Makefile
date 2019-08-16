@@ -2,6 +2,7 @@
 USER_EMAIL=$(shell git config --get user.email)
 
 EPC_VERSION=1.0.1
+CONF_VERSION=0.11.0
 DB_VERSION=0.9.12
 TARGET_DIR=./BUILD/
 LIB_DIR=./LIBRARIES/
@@ -16,16 +17,16 @@ libraries:
 libraries_deb:
 	make -C $(LIB_DIR) all_deb
 
-target:
+dir:
 	mkdir -p $(TARGET_DIR)
 
-hss: target
+hss: dir
 	./oaienv; ./scripts/build_hss
 
-mme: target
+mme: dir
 	./oaienv; ./scripts/build_mme
 
-spgw: target
+spgw: dir
 	./oaienv; ./scripts/build_spgw
 
 epc: hss mme spgw
@@ -46,7 +47,7 @@ epc: hss mme spgw
 		--name colte-epc \
 		--version $(EPC_VERSION) \
 		--package $(TARGET_DIR) \
-		--depends 'default-libmysqlclient-dev, libconfig9, libsctp1, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-db, libevent-openssl-2.0-5, libevent-pthreads-2.0-5' \
+		--depends 'default-libmysqlclient-dev, libconfig9, libsctp1, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-db, colte-conf, libevent-openssl-2.0-5, libevent-pthreads-2.0-5' \
 		--after-install ./package/epc/postinst \
 		--after-remove ./package/epc/postrm \
 		./BUILD/oai_hss=/usr/bin/ \
@@ -64,7 +65,27 @@ epc: hss mme spgw
 		./package/epc/oai=/usr/local/etc/colte/oai \
 		./package/epc/freeDiameter=/usr/local/etc/oai/
 
-db: target
+conf: dir
+	fpm --input-type dir \
+		--output-type deb \
+		--force \
+		--vendor uw-ictd \
+		--config-files /usr/bin/colte/roles/configure/vars/main.yml \
+		--maintainer sevilla@cs.washington.edu \
+		--description "Configuration Tools for CoLTE" \
+		--url "https://github.com/uw-ictd/colte" \
+		--name colte-conf \
+		--version $(CONF_VERSION) \
+		--package $(TARGET_DIR) \
+		--depends 'ansible, python-mysqldb, colte-db' \
+		--after-install ./colteconf/postinst \
+		--after-remove ./colteconf/postrm \
+		./colteconf/colteconf=/usr/bin/ \
+		./colteconf/coltedb=/usr/bin/ \
+		./colteconf/colte=/usr/bin/ \
+		./colteconf/config.yml=/usr/local/etc/colte/config.yml
+
+db: dir
 	fpm --input-type dir \
 		--output-type deb \
 		--force \
@@ -80,7 +101,7 @@ db: target
 		--after-remove ./package/db/postrm \
 		./package/db/sample_db.sql=/usr/local/etc/colte/sample_db.sql
 
-all: epc db
+all: epc db conf
 
 package-clean:
 	rm colte*\.deb
