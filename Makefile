@@ -5,10 +5,17 @@ EPC_VERSION=1.0.1
 DB_VERSION=0.9.11
 OAI_DEPS_VERSION=0.9.10
 TARGET_DIR=./BUILD/
+LIB_DIR=./LIBRARIES/
 
 build_deps:
 	sudo apt-get install autoconf automake bison build-essential cmake cmake-curses-gui doxygen doxygen-gui flex pkg-config git libconfig-dev libgcrypt11-dev libidn2-0-dev libidn11-dev default-libmysqlclient-dev libpthread-stubs0-dev libsctp1 libsctp-dev libssl-dev libtool openssl nettle-dev nettle-bin php python-pexpect castxml guile-2.0-dev libgmp-dev libhogweed4 libgtk-3-dev libxml2 libxml2-dev mscgen check python libgnutls28-dev python-dev unzip libmnl-dev libevent-dev ruby ruby-dev rubygems
 	sudo gem install --no-ri --no-rdoc fpm
+
+libraries:
+	make -C $(LIB_DIR) all
+
+libraries_deb:
+	make -C $(LIB_DIR) all_deb
 
 target:
 	mkdir -p $(TARGET_DIR)
