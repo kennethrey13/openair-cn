@@ -45,5 +45,6 @@ add_library (SGW
   sgw_handler_gtpu.c
   sgw_task.c
   spgw_config.c
+  sgw_db_connector.c
   )
 

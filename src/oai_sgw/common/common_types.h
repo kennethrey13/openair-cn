@@ -46,6 +46,7 @@ extern "C" {
 struct ipv4_list_elm_s {
   STAILQ_ENTRY(ipv4_list_elm_s) ipv4_entries;
   struct in_addr  addr;
+  char imsi[16];
 };
 
 typedef struct ebi_list_s {

@@ -66,6 +66,11 @@ extern "C" {
 #  define libconfig_int int
 #endif
 
+#define SGW_CONFIG_STRING_MYSQL_SERVER             "MYSQL_server"
+#define SGW_CONFIG_STRING_MYSQL_USER               "MYSQL_user"
+#define SGW_CONFIG_STRING_MYSQL_PASS               "MYSQL_pass"
+#define SGW_CONFIG_STRING_MYSQL_DB                 "MYSQL_db"
+
 //------------------------------------------------------------------------------
 void sgw_config_init (sgw_config_t * config_pP)
 {
@@ -265,6 +270,35 @@ int sgw_config_parse_file (sgw_config_t * config_pP)
         config_pP->udp_port_S1u_S12_S4_up = sgw_udp_port_S1u_S12_S4_up;
       }
     }
+
+    if (  (config_setting_lookup_string( setting_sgw, SGW_CONFIG_STRING_MYSQL_SERVER, (const char **)&astring) )) {
+      config_pP->mysql_server = strdup(astring);
+    } else {
+      OAILOG_ERROR(LOG_SPGW_APP, "Failed to parse SGW configuration file token %s astring %s!\n", SGW_CONFIG_STRING_MYSQL_SERVER, astring);
+      return -1;
+    }
+
+    if (  (config_setting_lookup_string( setting_sgw, SGW_CONFIG_STRING_MYSQL_USER, (const char **)&astring) )) {
+      config_pP->mysql_user = strdup(astring);
+    } else {
+      OAILOG_ERROR(LOG_SPGW_APP, "Failed to parse SGW configuration file token %s!\n", SGW_CONFIG_STRING_MYSQL_USER);
+      return -1;
+    }
+
+    if (  (config_setting_lookup_string( setting_sgw, SGW_CONFIG_STRING_MYSQL_PASS, (const char **)&astring) )) {
+      config_pP->mysql_password = strdup(astring);
+    } else {
+      OAILOG_ERROR(LOG_SPGW_APP, "Failed to parse SGW configuration file token %s!\n", SGW_CONFIG_STRING_MYSQL_PASS);
+      return -1;
+    }
+
+    if (  (config_setting_lookup_string( setting_sgw, SGW_CONFIG_STRING_MYSQL_DB, (const char **)&astring) )) {
+      config_pP->mysql_database = strdup(astring);
+    } else {
+      OAILOG_ERROR(LOG_SPGW_APP, "Failed to parse SGW configuration file token %s!\n", SGW_CONFIG_STRING_MYSQL_DB);
+      return -1;
+    }
+
   }
 
   config_destroy (&cfg);

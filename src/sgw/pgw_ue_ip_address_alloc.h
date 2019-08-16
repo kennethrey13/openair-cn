@@ -35,6 +35,7 @@ extern "C" {
 
 int allocate_ue_ipv4_address (const char *imsi, struct in_addr *addr); 
 int release_ue_ipv4_address (const char *imsi, struct in_addr *addr);
+int ue_get_imsi_from_ipv4(char *imsi, struct in_addr *addr);
 void pgw_ip_address_pool_init (void); 
 
 #ifdef __cplusplus

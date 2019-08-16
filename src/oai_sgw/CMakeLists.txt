@@ -201,6 +201,7 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(FindMySQL)
 
 ###############################################################################
 # Split repository for licensing reasons
@@ -325,7 +326,7 @@ add_executable(spgw
 target_link_libraries (spgw asan
       -Wl,--start-group
       BSTR CN_UTILS GTPV1U GTPV2C HASHTABLE 
-      SGW S11_SGW UDP_SERVER ${MSC_LIB} ${COMPILE_OPENFLOW} ITTI  3GPP_TYPES
+      SGW S11_SGW UDP_SERVER ${MSC_LIB} ${COMPILE_OPENFLOW} ITTI  3GPP_TYPES ${MySQL_LIBRARY}
       -Wl,--end-group
       pthread m rt ${LFDS} ${CONFIG_LIBRARIES} event
       )
