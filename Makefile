@@ -48,6 +48,7 @@ epc: hss mme spgw
 		--version $(EPC_VERSION) \
 		--package $(TARGET_DIR) \
 		--depends 'default-libmysqlclient-dev, libconfig9, libsctp1, colte-freediameter, colte-liblfds, colte-libgtpnl, colte-db, colte-conf, libevent-openssl-2.0-5, libevent-pthreads-2.0-5' \
+		--replaces 'colte-hss, colte-mme, colte-spgw' \
 		--after-install ./package/epc/postinst \
 		--after-remove ./package/epc/postrm \
 		./BUILD/oai_hss=/usr/bin/ \
