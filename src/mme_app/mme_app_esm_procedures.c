@@ -137,7 +137,7 @@ nas_esm_proc_pdn_connectivity_t* mme_app_nas_esm_create_pdn_connectivity_procedu
   }
   LIST_INSERT_HEAD((ue_context->esm_procedures.pdn_connectivity_procedures), esm_proc_pdn_connectivity, entries);
 
-  return esm_proc_pdn_connectivity;
+  OAILOG_FUNC_RETURN(LOG_MME_APP, esm_proc_pdn_connectivity);
 }
 
 //------------------------------------------------------------------------------
@@ -206,11 +206,11 @@ nas_esm_proc_pdn_connectivity_t* mme_app_nas_esm_get_pdn_connectivity_procedure(
     LIST_FOREACH(esm_pdn_connectivity_proc, ue_context->esm_procedures.pdn_connectivity_procedures, entries) {
       /** Search by PTI only. */
       if (pti == PROCEDURE_TRANSACTION_IDENTITY_UNASSIGNED || pti == esm_pdn_connectivity_proc->esm_base_proc.pti) {
-        return esm_pdn_connectivity_proc;
+        OAILOG_FUNC_RETURN(LOG_MME_APP, esm_pdn_connectivity_proc);
       }
     }
   }
-  return NULL;
+  OAILOG_FUNC_RETURN(LOG_MME_APP, NULL);
 }
 
 //------------------------------------------------------------------------------

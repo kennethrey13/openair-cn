@@ -52,6 +52,8 @@ s1ap_mme_compare_gummei (
   int                                     i = 0;
   plmn_t                                  plmn;
 
+  OAILOG_FUNC_IN (LOG_S1AP);
+
   DevAssert (tbcd_plmn != NULL);
 
   memset((void*)&plmn, 0, sizeof(plmn_t));
