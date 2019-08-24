@@ -2600,7 +2600,10 @@ s1ap_mme_handle_error_ind_message (const sctp_assoc_id_t assoc_id, const sctp_st
 }
 
 //------------------------------------------------------------------------------
-
+// This is Spencer's VERY HACKED version of s1ap_mme_handle_reset. It ONLY handles this case:
+// ResetType = partial, one UE is reset, and eNB only sends enb_ue_s1ap_id.
+// The real fix is to solve the asn1 compiler class problem and recompile asn1 code,
+// but in the meantime this case is somewhat common in prod and needs to be handled.
 int
 s1ap_mme_handle_enb_reset (
      const sctp_assoc_id_t assoc_id,
@@ -2616,9 +2619,11 @@ s1ap_mme_handle_enb_reset (
   arg_s1ap_construct_enb_reset_req_t      arg = {0};
   uint32_t                                i = 0;
   int                                     rc = RETURNok;
-  mme_ue_s1ap_id_t  mme_ue_s1ap_id;
-  enb_ue_s1ap_id_t  enb_ue_s1ap_id;
+  mme_ue_s1ap_id_t  mme_ue_s1ap_id = 0;
+  enb_ue_s1ap_id_t  enb_ue_s1ap_id = 0;
 
+  enb_ue_s1ap_id_t  *enb_storage = NULL;
+  mme_ue_s1ap_id_t  *mme_storage = NULL;
 
   OAILOG_FUNC_IN (LOG_S1AP);
   /*
@@ -2644,114 +2649,250 @@ s1ap_mme_handle_enb_reset (
     OAILOG_INFO (LOG_S1AP, "No UEs is connected.Ignoring ENB Initiated Reset.eNB Id = %d\n", enb_association->enb_id);
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNok);
   }
-  // Check the reset type - partial_reset OR reset_all
+
   enb_reset_p = &message->msg.s1ap_ResetIEs;
-  switch (enb_reset_p->resetType.present) {
 
-  case S1ap_ResetType_PR_s1_Interface:
-      s1ap_reset_type = RESET_ALL;
-    break;
-  case S1ap_ResetType_PR_partOfS1_Interface:
-      s1ap_reset_type = RESET_PARTIAL;
-    break;
-  default:
-      OAILOG_ERROR (LOG_S1AP, "Reset Request from eNB  with Invalid reset_type = %d\n", enb_reset_p->resetType.present);
+  if (enb_reset_p->resetType.present == RESET_PARTIAL) {
+      OAILOG_ERROR (LOG_S1AP, "SMS: RESET_ALL message from eNB is not yet handled\n");
       // TBD - Here MME should send Error Indication as it is abnormal scenario.
       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
-  if (s1ap_reset_type == RESET_PARTIAL) {
-
-    if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count == 0) {
-      OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any S1 signaling connection.Ignoring it \n");
-      // TBD - Here MME should send Error Indication as it is abnormal scenario.
-      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-    }
-    if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count > enb_association->nb_ue_associated) {
+  if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count > enb_association->nb_ue_associated) {
       OAILOG_ERROR (LOG_S1AP, "Partial Reset Request. Requested number of UEs %d to be reset is more than connected UEs %d \n",
-                          enb_reset_p->resetType.choice.partOfS1_Interface.list.count, enb_association->nb_ue_associated);
+                        enb_reset_p->resetType.choice.partOfS1_Interface.list.count, enb_association->nb_ue_associated);
+    // TBD - Here MME should send Error Indication as it is abnormal scenario.
+      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
+  if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count != 1) {
+      OAILOG_ERROR (LOG_S1AP, "SMS: RESET_PARTIAL message from eNB has count=%d but we ONLY handle count=1\n", enb_reset_p->resetType.choice.partOfS1_Interface.list.count);
       // TBD - Here MME should send Error Indication as it is abnormal scenario.
       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-    }
   }
+
+// TEST FOR EXISTENCE AND PULL OUT enb_ue_s1ap_id
+  field = (S1ap_IE_t*) enb_reset_p->resetType.choice.partOfS1_Interface.list.array[0];
+
+  if (field == NULL) {
+      OAILOG_ERROR (LOG_S1AP, "SMS: ERROR - field is NULL?\n");
+      // TBD - Here MME should send Error Indication as it is abnormal scenario.
+      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+  if (field->id != S1ap_ProtocolIE_ID_id_UE_associatedLogicalS1_ConnectionItem) {
+      OAILOG_ERROR (LOG_S1AP, "SMS: ERROR - Decoding ResetPartial and got field id %u instead of %u\n", field->id, S1ap_ProtocolIE_ID_id_UE_associatedLogicalS1_ConnectionItem);
+      // TBD - Here MME should send Error Indication as it is abnormal scenario.
+      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
+  uint8_t val = (uint8_t) field->value.buf[1];
+  enb_ue_s1ap_id = val;
+  enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
+
+// TEST FOR EXISTENCE AND PULL OUT mme_ue_s1ap_id
+  ue_ref_p = s1ap_is_ue_enb_id_in_list (enb_association, enb_ue_s1ap_id);
+
+  if (ue_ref_p == NULL) {
+      OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
+      // TBD - Here MME should send Error Indication as it is abnormal scenario.
+      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
+  if (ue_ref_p->mme_ue_s1ap_id == INVALID_MME_UE_S1AP_ID) {
+    mme_ue_s1ap_id = 0;
+  else {
+    mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
+  }
+
+// MALLOC FOR THE POINTERS (ONLY MALLOC MME IF NON-ZERO)
+  enb_storage = malloc(sizeof (enb_ue_s1ap_id_t));
+  *enb_storage = enb_ue_s1ap_id;  
+
+  if (mme_ue_s1ap_id) {
+    mme_storage = malloc(sizeof (enb_ue_s1ap_id_t));    
+    *mme_storage = mme_ue_s1ap_id;
+  }
+
+// BUILD THE ITTI MESSAGE AND SEND IT
   message_p = itti_alloc_new_message (TASK_S1AP, S1AP_ENB_INITIATED_RESET_REQ);
   AssertFatal (message_p != NULL, "itti_alloc_new_message Failed");
   memset ((void *)&message_p->ittiMsg.s1ap_enb_initiated_reset_req, 0, sizeof (itti_s1ap_enb_initiated_reset_req_t));
-  S1AP_ENB_INITIATED_RESET_REQ (message_p).s1ap_reset_type = s1ap_reset_type;
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).s1ap_reset_type = RESET_PARTIAL;
   S1AP_ENB_INITIATED_RESET_REQ (message_p).enb_id = enb_association->enb_id;
   S1AP_ENB_INITIATED_RESET_REQ (message_p).sctp_assoc_id = assoc_id;
   S1AP_ENB_INITIATED_RESET_REQ (message_p).sctp_stream_id = stream;
 
-  if (s1ap_reset_type == RESET_ALL) {
-    S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = enb_association->nb_ue_associated;
-    S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list = (s1_sig_conn_id_t*) calloc (enb_association->nb_ue_associated,
-                                                                                          sizeof (*(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list)));
-    DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
-    arg.message_p = message_p;
-    hashtable_ts_apply_callback_on_elements(&enb_association->ue_coll, construct_s1ap_mme_full_reset_req, (void*)&arg, (void**) &message_p);
-  } else {
-    // Partial Reset
-    S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = enb_reset_p->resetType.choice.partOfS1_Interface.list.count;
-    S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list = (s1_sig_conn_id_t*)
-                        calloc (enb_reset_p->resetType.choice.partOfS1_Interface.list.count, sizeof (*(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list)));
-    DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
-    for (i = 0; i < enb_reset_p->resetType.choice.partOfS1_Interface.list.count; i++) {
-      s1_sig_conn_id_p = (S1ap_UE_associatedLogicalS1_ConnectionItem_t*) enb_reset_p->resetType.choice.partOfS1_Interface.list.array[i];
-      DevAssert(s1_sig_conn_id_p != NULL);
+  // Partial Reset specific fields
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list = (s1_sig_conn_id_t*)
+                      calloc (1, sizeof (*(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list)));
+  DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
 
-      if (s1_sig_conn_id_p->mME_UE_S1AP_ID != NULL) {
-        mme_ue_s1ap_id = (mme_ue_s1ap_id_t) *(s1_sig_conn_id_p->mME_UE_S1AP_ID);
-        if ((ue_ref_p = s1ap_is_ue_mme_id_in_list (mme_ue_s1ap_id)) != NULL) {
-          if (s1_sig_conn_id_p->eNB_UE_S1AP_ID != NULL) {
-            enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
-            if (ue_ref_p->enb_ue_s1ap_id == (enb_ue_s1ap_id & ENB_UE_S1AP_ID_MASK)) {
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
-              enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
-            } else {
-              // mismatch in enb_ue_s1ap_id sent by eNB and stored in S1AP ue context in EPC. Abnormal case.
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
-              OAILOG_ERROR (LOG_S1AP, "Partial Reset Request:enb_ue_s1ap_id mismatch between id %d sent by eNB and id %d stored in epc for mme_ue_s1ap_id %d \n",
-                          enb_ue_s1ap_id, ue_ref_p->enb_ue_s1ap_id, mme_ue_s1ap_id);
-            }
-          } else {
-            S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
-            S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
-          }
-        } else {
-          OAILOG_ERROR (LOG_S1AP, "Partial Reset Request - No UE context found for mme_ue_s1ap_id %d \n", mme_ue_s1ap_id);
-          // TBD - Here MME should send Error Indication as it is abnormal scenario.
-          OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-        }
-      } else {
-        if (s1_sig_conn_id_p->eNB_UE_S1AP_ID != NULL) {
-          enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
-          if ((ue_ref_p = s1ap_is_ue_enb_id_in_list (enb_association, enb_ue_s1ap_id)) != NULL) {
-            enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
-            S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
-            if (ue_ref_p->mme_ue_s1ap_id != INVALID_MME_UE_S1AP_ID) {
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
-            } else {
-              S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
-            }
-          } else {
-              OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
-              // TBD - Here MME should send Error Indication as it is abnormal scenario.
-              OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-          }
-        } else {
-          OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
-          // TBD - Here MME should send Error Indication as it is abnormal scenario.
-          OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-        }
-      }
-    }
-  }
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = 1;
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].enb_ue_s1ap_id = enb_storage;
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].mme_ue_s1ap_id = mme_storage;
+
   rc =  itti_send_msg_to_task (TASK_MME_APP, INSTANCE_DEFAULT, message_p);
   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
 }
+
+// int
+// s1ap_mme_handle_enb_reset (
+//      const sctp_assoc_id_t assoc_id,
+//      const sctp_stream_id_t stream,
+//     struct s1ap_message_s *message)
+// {
+//   S1ap_ResetIEs_t                         *enb_reset_p = NULL;
+//   MessageDef                              *message_p  = NULL;
+//   ue_description_t                        *ue_ref_p = NULL;
+//   enb_description_t                       *enb_association = NULL;
+//   s1ap_reset_type_t                       s1ap_reset_type;
+//   S1ap_UE_associatedLogicalS1_ConnectionItem_t* s1_sig_conn_id_p = NULL;
+//   arg_s1ap_construct_enb_reset_req_t      arg = {0};
+//   uint32_t                                i = 0;
+//   int                                     rc = RETURNok;
+//   mme_ue_s1ap_id_t  mme_ue_s1ap_id;
+//   enb_ue_s1ap_id_t  enb_ue_s1ap_id;
+
+
+//   OAILOG_FUNC_IN (LOG_S1AP);
+//   /*
+//    * Checking that the assoc id has a valid eNB attached to.
+//    */
+//   enb_association = s1ap_is_enb_assoc_id_in_list (assoc_id);
+
+//   if (enb_association == NULL) {
+//     OAILOG_ERROR (LOG_S1AP, "No eNB attached to this assoc_id: %d\n", assoc_id);
+//     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//   }
+
+//   // Check the state of S1AP
+//   if (enb_association->s1_state != S1AP_READY) {
+//     // Ignore the message
+//     OAILOG_INFO (LOG_S1AP, "S1 setup is not done.Invalid state.Ignoring ENB Initiated Reset.eNB Id = %d , S1AP state = %d \n", enb_association->enb_id, enb_association->s1_state);
+//     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNok);
+//   }
+
+//   // Check if there are no UEs connected
+//   if (!enb_association->nb_ue_associated) {
+//     // Ignore the message
+//     OAILOG_INFO (LOG_S1AP, "No UEs is connected.Ignoring ENB Initiated Reset.eNB Id = %d\n", enb_association->enb_id);
+//     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNok);
+//   }
+//   // Check the reset type - partial_reset OR reset_all
+//   enb_reset_p = &message->msg.s1ap_ResetIEs;
+//   switch (enb_reset_p->resetType.present) {
+
+//   case S1ap_ResetType_PR_s1_Interface:
+//       s1ap_reset_type = RESET_ALL;
+//     break;
+//   case S1ap_ResetType_PR_partOfS1_Interface:
+//       s1ap_reset_type = RESET_PARTIAL;
+//     break;
+//   default:
+//       OAILOG_ERROR (LOG_S1AP, "Reset Request from eNB  with Invalid reset_type = %d\n", enb_reset_p->resetType.present);
+//       // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//   }
+
+//   if (s1ap_reset_type == RESET_PARTIAL) {
+
+//     if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count == 0) {
+//       OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any S1 signaling connection.Ignoring it \n");
+//       // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//     }
+//     if (enb_reset_p->resetType.choice.partOfS1_Interface.list.count > enb_association->nb_ue_associated) {
+//       OAILOG_ERROR (LOG_S1AP, "Partial Reset Request. Requested number of UEs %d to be reset is more than connected UEs %d \n",
+//                           enb_reset_p->resetType.choice.partOfS1_Interface.list.count, enb_association->nb_ue_associated);
+//       // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//     }
+//   }
+//   message_p = itti_alloc_new_message (TASK_S1AP, S1AP_ENB_INITIATED_RESET_REQ);
+//   AssertFatal (message_p != NULL, "itti_alloc_new_message Failed");
+//   memset ((void *)&message_p->ittiMsg.s1ap_enb_initiated_reset_req, 0, sizeof (itti_s1ap_enb_initiated_reset_req_t));
+//   S1AP_ENB_INITIATED_RESET_REQ (message_p).s1ap_reset_type = s1ap_reset_type;
+//   S1AP_ENB_INITIATED_RESET_REQ (message_p).enb_id = enb_association->enb_id;
+//   S1AP_ENB_INITIATED_RESET_REQ (message_p).sctp_assoc_id = assoc_id;
+//   S1AP_ENB_INITIATED_RESET_REQ (message_p).sctp_stream_id = stream;
+
+//   if (s1ap_reset_type == RESET_ALL) {
+//     S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = enb_association->nb_ue_associated;
+//     S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list = (s1_sig_conn_id_t*) calloc (enb_association->nb_ue_associated,
+//                                                                                           sizeof (*(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list)));
+//     DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
+//     arg.message_p = message_p;
+//     hashtable_ts_apply_callback_on_elements(&enb_association->ue_coll, construct_s1ap_mme_full_reset_req, (void*)&arg, (void**) &message_p);
+//   } else {
+//     // Partial Reset
+//     S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = enb_reset_p->resetType.choice.partOfS1_Interface.list.count;
+//     S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list = (s1_sig_conn_id_t*)
+//                         calloc (enb_reset_p->resetType.choice.partOfS1_Interface.list.count, sizeof (*(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list)));
+//     DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
+//     for (i = 0; i < enb_reset_p->resetType.choice.partOfS1_Interface.list.count; i++) {
+//       s1_sig_conn_id_p = (S1ap_UE_associatedLogicalS1_ConnectionItem_t*) enb_reset_p->resetType.choice.partOfS1_Interface.list.array[i];
+//       DevAssert(s1_sig_conn_id_p != NULL);
+
+//       if (s1_sig_conn_id_p->mME_UE_S1AP_ID != NULL) {
+//         mme_ue_s1ap_id = (mme_ue_s1ap_id_t) *(s1_sig_conn_id_p->mME_UE_S1AP_ID);
+//         if ((ue_ref_p = s1ap_is_ue_mme_id_in_list (mme_ue_s1ap_id)) != NULL) {
+//           if (s1_sig_conn_id_p->eNB_UE_S1AP_ID != NULL) {
+//             enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
+//             if (ue_ref_p->enb_ue_s1ap_id == (enb_ue_s1ap_id & ENB_UE_S1AP_ID_MASK)) {
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
+//               enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
+//             } else {
+//               // mismatch in enb_ue_s1ap_id sent by eNB and stored in S1AP ue context in EPC. Abnormal case.
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
+//               OAILOG_ERROR (LOG_S1AP, "Partial Reset Request:enb_ue_s1ap_id mismatch between id %d sent by eNB and id %d stored in epc for mme_ue_s1ap_id %d \n",
+//                           enb_ue_s1ap_id, ue_ref_p->enb_ue_s1ap_id, mme_ue_s1ap_id);
+//             }
+//           } else {
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
+//           }
+//         } else {
+//           OAILOG_ERROR (LOG_S1AP, "Partial Reset Request - No UE context found for mme_ue_s1ap_id %d \n", mme_ue_s1ap_id);
+//           // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//           OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//         }
+//       } else {
+//         if (s1_sig_conn_id_p->eNB_UE_S1AP_ID != NULL) {
+//           enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
+//           if ((ue_ref_p = s1ap_is_ue_enb_id_in_list (enb_association, enb_ue_s1ap_id)) != NULL) {
+//             enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
+//             if (ue_ref_p->mme_ue_s1ap_id != INVALID_MME_UE_S1AP_ID) {
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
+//             } else {
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
+//             }
+//           } else {
+//               OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
+//               // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//               OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//           }
+//         } else {
+//           OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
+//           // TBD - Here MME should send Error Indication as it is abnormal scenario.
+//           OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//         }
+//       }
+//     }
+//   }
+//   rc =  itti_send_msg_to_task (TASK_MME_APP, INSTANCE_DEFAULT, message_p);
+//   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
+// }
+
 //------------------------------------------------------------------------------
+// This is Spencer's VERY HACKED version of s1ap_mme_handle_reset_ack. It ONLY handles this case:
+// ResetType = partial, one UE is reset, and eNB only sends enb_ue_s1ap_id.
+// This codebase just writes an SCTP message directly, and DOES NOT use the asn1 codings.
+// The real fix is to solve the asn1 compiler class problem and recompile asn1 code,
+// but in the meantime this case is somewhat common in prod and needs to be handled.
+
 int
 s1ap_handle_enb_initiated_reset_ack (
   const itti_s1ap_enb_initiated_reset_ack_t * const enb_reset_ack_p)
@@ -2765,43 +2906,86 @@ s1ap_handle_enb_initiated_reset_ack (
   S1ap_ENB_UE_S1AP_ID_t enb_ue_id[MAX_NUM_PARTIAL_S1_CONN_RESET] = {0};
   MessagesIds                             message_id = MESSAGES_ID_MAX;
   int                                     rc = RETURNok;
+  uint32_t                                enb_ue_id = 0;
+
 
   OAILOG_FUNC_IN (LOG_S1AP);
 
-  message.procedureCode = S1ap_ProcedureCode_id_Reset;
-  message.direction = S1AP_PDU_PR_successfulOutcome;
-  s1ap_ResetAcknowledgeIEs_p = &message.msg.s1ap_ResetAcknowledgeIEs;
-  s1ap_ResetAcknowledgeIEs_p->presenceMask = 0;
-
-  if (enb_reset_ack_p->s1ap_reset_type == RESET_PARTIAL) {
-    DevAssert(enb_reset_ack_p->num_ue > 0);
-    s1ap_ResetAcknowledgeIEs_p->presenceMask |= S1AP_RESETACKNOWLEDGEIES_UE_ASSOCIATEDLOGICALS1_CONNECTIONLISTRESACK_PRESENT;
-    s1ap_ResetAcknowledgeIEs_p->uE_associatedLogicalS1_ConnectionListResAck.s1ap_UE_associatedLogicalS1_ConnectionItemResAck.count = enb_reset_ack_p->num_ue;
-    for (uint32_t i = 0; i < enb_reset_ack_p->num_ue; i++) {
-      if (enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id != NULL) {
-        mme_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id);
-        sig_conn_list[0].mME_UE_S1AP_ID = &mme_ue_id[i];
-      } else {
-        sig_conn_list[0].mME_UE_S1AP_ID = NULL;
-      }
-      if (enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id != NULL) {
-        enb_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id);
-        sig_conn_list[0].eNB_UE_S1AP_ID = &enb_ue_id[i];
-      } else {
-        sig_conn_list[0].eNB_UE_S1AP_ID = NULL;
-      }
-      sig_conn_list[0].iE_Extensions = NULL;
-    }
-
-    ASN_SEQUENCE_ADD (&s1ap_ResetAcknowledgeIEs_p->uE_associatedLogicalS1_ConnectionListResAck.s1ap_UE_associatedLogicalS1_ConnectionItemResAck, sig_conn_list);
-  }
-  if (s1ap_mme_encode_pdu (&message, &message_id, &buffer, &length) < 0) {
-    OAILOG_ERROR (LOG_S1AP, "Reset Ack encoding failed \n");
+  if (enb_reset_ack_p->s1ap_reset_type != RESET_PARTIAL) {
+    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot send RESET_ALL Ack\n");
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
-  bstring b = blk2bstr(buffer, length);
-  free(buffer);
-  rc = s1ap_mme_itti_send_sctp_request (&b, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
-  s1ap_free_mme_encode_pdu(&message, message_id);
+
+  if (enb_reset_ack_p->num_ue != 1) {
+    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot send RESET_PARTIAL Ack with num_ues=%d; currently only support num_ues=1.\n", enb_reset_ack_p->num_ue);
+    OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
+  enb_ue_id = *(enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id);
+  if (enb_ue_id > 256) {
+    OAILOG_ERROR (LOG_S1AP, "ERROR: This coding WILL NOT WORK if we cannot cram enb_ue_id into a uint8_t\n", enb_reset_ack_p->num_ue);
+    OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
+  uint8_t hex[]= {0x20, 0x0E, 0x00, 0x0E, 0x00, 0x00, 0x01, 0x00, 0x5D, 0x40, 0x07, 0x00, 0x00, 0x5B, 0x40, 0x02, 0x20, 0x00};
+  hex[17] = (uint8_t) enb_ue_id;
+  
+  bstring b = blk2bstr(&hex, 18);
+  rc = s1ap_mme_itti_send_sctp_request (&hex, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
+
   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
 }
+
+// int
+// s1ap_handle_enb_initiated_reset_ack (
+//   const itti_s1ap_enb_initiated_reset_ack_t * const enb_reset_ack_p)
+// {
+//   uint8_t                                *buffer = NULL;
+//   uint32_t                                length = 0;
+//   s1ap_message                            message = {0};
+//   S1ap_ResetAcknowledgeIEs_t * s1ap_ResetAcknowledgeIEs_p = NULL;
+//   S1ap_UE_associatedLogicalS1_ConnectionItem_t sig_conn_list[MAX_NUM_PARTIAL_S1_CONN_RESET] = {{0}};
+//   S1ap_MME_UE_S1AP_ID_t mme_ue_id[MAX_NUM_PARTIAL_S1_CONN_RESET] = {0};
+//   S1ap_ENB_UE_S1AP_ID_t enb_ue_id[MAX_NUM_PARTIAL_S1_CONN_RESET] = {0};
+//   MessagesIds                             message_id = MESSAGES_ID_MAX;
+//   int                                     rc = RETURNok;
+
+//   OAILOG_FUNC_IN (LOG_S1AP);
+
+//   message.procedureCode = S1ap_ProcedureCode_id_Reset;
+//   message.direction = S1AP_PDU_PR_successfulOutcome;
+//   s1ap_ResetAcknowledgeIEs_p = &message.msg.s1ap_ResetAcknowledgeIEs;
+//   s1ap_ResetAcknowledgeIEs_p->presenceMask = 0;
+
+//   if (enb_reset_ack_p->s1ap_reset_type == RESET_PARTIAL) {
+//     DevAssert(enb_reset_ack_p->num_ue > 0);
+//     s1ap_ResetAcknowledgeIEs_p->presenceMask |= S1AP_RESETACKNOWLEDGEIES_UE_ASSOCIATEDLOGICALS1_CONNECTIONLISTRESACK_PRESENT;
+//     s1ap_ResetAcknowledgeIEs_p->uE_associatedLogicalS1_ConnectionListResAck.s1ap_UE_associatedLogicalS1_ConnectionItemResAck.count = enb_reset_ack_p->num_ue;
+//     for (uint32_t i = 0; i < enb_reset_ack_p->num_ue; i++) {
+//       if (enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id != NULL) {
+//         mme_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id);
+//         sig_conn_list[0].mME_UE_S1AP_ID = &mme_ue_id[i];
+//       } else {
+//         sig_conn_list[0].mME_UE_S1AP_ID = NULL;
+//       }
+//       if (enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id != NULL) {
+//         enb_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id);
+//         sig_conn_list[0].eNB_UE_S1AP_ID = &enb_ue_id[i];
+//       } else {
+//         sig_conn_list[0].eNB_UE_S1AP_ID = NULL;
+//       }
+//       sig_conn_list[0].iE_Extensions = NULL;
+//     }
+
+//     ASN_SEQUENCE_ADD (&s1ap_ResetAcknowledgeIEs_p->uE_associatedLogicalS1_ConnectionListResAck.s1ap_UE_associatedLogicalS1_ConnectionItemResAck, sig_conn_list);
+//   }
+//   if (s1ap_mme_encode_pdu (&message, &message_id, &buffer, &length) < 0) {
+//     OAILOG_ERROR (LOG_S1AP, "Reset Ack encoding failed \n");
+//     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+//   }
+//   bstring b = blk2bstr(buffer, length);
+//   free(buffer);
+//   rc = s1ap_mme_itti_send_sctp_request (&b, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
+//   s1ap_free_mme_encode_pdu(&message, message_id);
+//   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
+// }
