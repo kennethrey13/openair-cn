@@ -2672,7 +2672,7 @@ s1ap_mme_handle_enb_reset (
   }
 
 // TEST FOR EXISTENCE AND PULL OUT enb_ue_s1ap_id
-  field = (S1ap_IE_t*) enb_reset_p->resetType.choice.partOfS1_Interface.list.array[0];
+  S1ap_IE_t* field = (S1ap_IE_t*) enb_reset_p->resetType.choice.partOfS1_Interface.list.array[0];
 
   if (field == NULL) {
       OAILOG_ERROR (LOG_S1AP, "SMS: ERROR - field is NULL?\n");
@@ -2700,18 +2700,16 @@ s1ap_mme_handle_enb_reset (
 
   if (ue_ref_p->mme_ue_s1ap_id == INVALID_MME_UE_S1AP_ID) {
     mme_ue_s1ap_id = 0;
-  else {
+  } else {
     mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
   }
 
 // MALLOC FOR THE POINTERS (ONLY MALLOC MME IF NON-ZERO)
   enb_storage = malloc(sizeof (enb_ue_s1ap_id_t));
-  *enb_storage = enb_ue_s1ap_id;  
+  mme_storage = malloc(sizeof (enb_ue_s1ap_id_t));    
 
-  if (mme_ue_s1ap_id) {
-    mme_storage = malloc(sizeof (enb_ue_s1ap_id_t));    
-    *mme_storage = mme_ue_s1ap_id;
-  }
+  *enb_storage = enb_ue_s1ap_id;
+  *mme_storage = mme_ue_s1ap_id;
 
 // BUILD THE ITTI MESSAGE AND SEND IT
   message_p = itti_alloc_new_message (TASK_S1AP, S1AP_ENB_INITIATED_RESET_REQ);
@@ -2902,11 +2900,10 @@ s1ap_handle_enb_initiated_reset_ack (
   s1ap_message                            message = {0};
   S1ap_ResetAcknowledgeIEs_t * s1ap_ResetAcknowledgeIEs_p = NULL;
   S1ap_UE_associatedLogicalS1_ConnectionItem_t sig_conn_list[MAX_NUM_PARTIAL_S1_CONN_RESET] = {{0}};
-  S1ap_MME_UE_S1AP_ID_t mme_ue_id[MAX_NUM_PARTIAL_S1_CONN_RESET] = {0};
-  S1ap_ENB_UE_S1AP_ID_t enb_ue_id[MAX_NUM_PARTIAL_S1_CONN_RESET] = {0};
   MessagesIds                             message_id = MESSAGES_ID_MAX;
   int                                     rc = RETURNok;
   uint32_t                                enb_ue_id = 0;
+  uint32_t                                mme_ue_id = 0;
 
 
   OAILOG_FUNC_IN (LOG_S1AP);
@@ -2921,9 +2918,14 @@ s1ap_handle_enb_initiated_reset_ack (
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
+  if (enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id == NULL) {
+    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot dereference null enb_ue_s1ap_id pointer\n");
+    OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }
+
   enb_ue_id = *(enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id);
   if (enb_ue_id > 256) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: This coding WILL NOT WORK if we cannot cram enb_ue_id into a uint8_t\n", enb_reset_ack_p->num_ue);
+    OAILOG_ERROR (LOG_S1AP, "ERROR: This code WILL NOT WORK because we cannot cram enb_ue_id %u into a uint8_t\n", enb_ue_id);
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
@@ -2931,7 +2933,7 @@ s1ap_handle_enb_initiated_reset_ack (
   hex[17] = (uint8_t) enb_ue_id;
   
   bstring b = blk2bstr(&hex, 18);
-  rc = s1ap_mme_itti_send_sctp_request (&hex, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
+  rc = s1ap_mme_itti_send_sctp_request (&b, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
 
   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
 }
