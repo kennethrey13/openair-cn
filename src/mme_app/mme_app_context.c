@@ -1832,20 +1832,19 @@ mme_app_handle_enb_reset_req (const itti_s1ap_enb_initiated_reset_req_t * const 
   if (enb_reset_req->s1ap_reset_type == RESET_ALL) {
   // Full Reset. Trigger UE Context release release for all the connected UEs.
     for (int i = 0; i < enb_reset_req->num_ue; i++) {
-      _mme_app_handle_s1ap_ue_context_release(*(enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id),
-                                            *(enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id),
+      _mme_app_handle_s1ap_ue_context_release(enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id,
+                                            enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id,
                                             enb_reset_req->enb_id,
                                             S1AP_SCTP_SHUTDOWN_OR_RESET);
     }
 
   } else { // Partial Reset
     for (int i = 0; i < enb_reset_req->num_ue; i++) {
-      if (enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id == NULL &&
-                          enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id == NULL)
+      if (enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id == 0 && enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id == 0)
         continue;
       else
-        _mme_app_handle_s1ap_ue_context_release(*(enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id),
-                                            *(enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id),
+        _mme_app_handle_s1ap_ue_context_release(enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id,
+                                            enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id,
                                             enb_reset_req->enb_id,
                                             S1AP_SCTP_SHUTDOWN_OR_RESET);
     }

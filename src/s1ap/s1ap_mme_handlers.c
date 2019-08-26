@@ -2075,13 +2075,13 @@ static bool construct_s1ap_mme_full_reset_req (
   uint32_t i = arg->current_ue_index;
   if (ue_ref_p) {
     enb_ue_s1ap_id = ue_ref_p->enb_ue_s1ap_id;
-    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
-    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
+    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
+    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].enb_ue_s1ap_id = enb_ue_s1ap_id;
     arg->current_ue_index++;
     *resultP = arg->message_p;
   } else {
     OAILOG_TRACE (LOG_S1AP, "No valid UE provided in callback: %p\n", ue_ref_p);
-    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
+    S1AP_ENB_INITIATED_RESET_REQ (arg->message_p).ue_to_reset_list[i].mme_ue_s1ap_id = 0;
   }
   return false;
 }
@@ -2622,9 +2622,6 @@ s1ap_mme_handle_enb_reset (
   mme_ue_s1ap_id_t  mme_ue_s1ap_id = 0;
   enb_ue_s1ap_id_t  enb_ue_s1ap_id = 0;
 
-  enb_ue_s1ap_id_t  *enb_storage = NULL;
-  mme_ue_s1ap_id_t  *mme_storage = NULL;
-
   OAILOG_FUNC_IN (LOG_S1AP);
   /*
    * Checking that the assoc id has a valid eNB attached to.
@@ -2704,13 +2701,6 @@ s1ap_mme_handle_enb_reset (
     mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
   }
 
-// MALLOC FOR THE POINTERS (ONLY MALLOC MME IF NON-ZERO)
-  enb_storage = malloc(sizeof (enb_ue_s1ap_id_t));
-  mme_storage = malloc(sizeof (enb_ue_s1ap_id_t));    
-
-  *enb_storage = enb_ue_s1ap_id;
-  *mme_storage = mme_ue_s1ap_id;
-
 // BUILD THE ITTI MESSAGE AND SEND IT
   message_p = itti_alloc_new_message (TASK_S1AP, S1AP_ENB_INITIATED_RESET_REQ);
   AssertFatal (message_p != NULL, "itti_alloc_new_message Failed");
@@ -2726,8 +2716,8 @@ s1ap_mme_handle_enb_reset (
   DevAssert(S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list != NULL);
 
   S1AP_ENB_INITIATED_RESET_REQ (message_p).num_ue = 1;
-  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].enb_ue_s1ap_id = enb_storage;
-  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].mme_ue_s1ap_id = mme_storage;
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].enb_ue_s1ap_id = enb_ue_s1ap_id;
+  S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[0].mme_ue_s1ap_id = mme_ue_s1ap_id;
 
   rc =  itti_send_msg_to_task (TASK_MME_APP, INSTANCE_DEFAULT, message_p);
   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
@@ -2837,19 +2827,19 @@ s1ap_mme_handle_enb_reset (
 //           if (s1_sig_conn_id_p->eNB_UE_S1AP_ID != NULL) {
 //             enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
 //             if (ue_ref_p->enb_ue_s1ap_id == (enb_ue_s1ap_id & ENB_UE_S1AP_ID_MASK)) {
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
 //               enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = enb_ue_s1ap_id;
 //             } else {
 //               // mismatch in enb_ue_s1ap_id sent by eNB and stored in S1AP ue context in EPC. Abnormal case.
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = 0;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = 0;
 //               OAILOG_ERROR (LOG_S1AP, "Partial Reset Request:enb_ue_s1ap_id mismatch between id %d sent by eNB and id %d stored in epc for mme_ue_s1ap_id %d \n",
 //                           enb_ue_s1ap_id, ue_ref_p->enb_ue_s1ap_id, mme_ue_s1ap_id);
 //             }
 //           } else {
-//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
-//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = NULL;
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = 0;
 //           }
 //         } else {
 //           OAILOG_ERROR (LOG_S1AP, "Partial Reset Request - No UE context found for mme_ue_s1ap_id %d \n", mme_ue_s1ap_id);
@@ -2861,11 +2851,11 @@ s1ap_mme_handle_enb_reset (
 //           enb_ue_s1ap_id = (enb_ue_s1ap_id_t) *(s1_sig_conn_id_p->eNB_UE_S1AP_ID);
 //           if ((ue_ref_p = s1ap_is_ue_enb_id_in_list (enb_association, enb_ue_s1ap_id)) != NULL) {
 //             enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
-//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = &enb_ue_s1ap_id;
+//             S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].enb_ue_s1ap_id = enb_ue_s1ap_id;
 //             if (ue_ref_p->mme_ue_s1ap_id != INVALID_MME_UE_S1AP_ID) {
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = &(ue_ref_p->mme_ue_s1ap_id);
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
 //             } else {
-//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = NULL;
+//               S1AP_ENB_INITIATED_RESET_REQ (message_p).ue_to_reset_list[i].mme_ue_s1ap_id = 0;
 //             }
 //           } else {
 //               OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
@@ -2918,12 +2908,13 @@ s1ap_handle_enb_initiated_reset_ack (
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
-  if (enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id == NULL) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot dereference null enb_ue_s1ap_id pointer\n");
+  enb_ue_id = enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id;
+
+  if (enb_ue_id == 0) {
+    OAILOG_ERROR (LOG_S1AP, "ERROR: enb_ue_s1ap_id == 0\n");
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
-  enb_ue_id = *(enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id);
   if (enb_ue_id > 256) {
     OAILOG_ERROR (LOG_S1AP, "ERROR: This code WILL NOT WORK because we cannot cram enb_ue_id %u into a uint8_t\n", enb_ue_id);
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
@@ -2964,14 +2955,14 @@ s1ap_handle_enb_initiated_reset_ack (
 //     s1ap_ResetAcknowledgeIEs_p->presenceMask |= S1AP_RESETACKNOWLEDGEIES_UE_ASSOCIATEDLOGICALS1_CONNECTIONLISTRESACK_PRESENT;
 //     s1ap_ResetAcknowledgeIEs_p->uE_associatedLogicalS1_ConnectionListResAck.s1ap_UE_associatedLogicalS1_ConnectionItemResAck.count = enb_reset_ack_p->num_ue;
 //     for (uint32_t i = 0; i < enb_reset_ack_p->num_ue; i++) {
-//       if (enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id != NULL) {
-//         mme_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id);
+//       if (enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id == 0) {
+//         mme_ue_id[i] = enb_reset_ack_p->ue_to_reset_list[i].mme_ue_s1ap_id;
 //         sig_conn_list[0].mME_UE_S1AP_ID = &mme_ue_id[i];
 //       } else {
 //         sig_conn_list[0].mME_UE_S1AP_ID = NULL;
 //       }
-//       if (enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id != NULL) {
-//         enb_ue_id[i] = *(enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id);
+//       if (enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id == 0) {
+//         enb_ue_id[i] = enb_reset_ack_p->ue_to_reset_list[i].enb_ue_s1ap_id;
 //         sig_conn_list[0].eNB_UE_S1AP_ID = &enb_ue_id[i];
 //       } else {
 //         sig_conn_list[0].eNB_UE_S1AP_ID = NULL;
