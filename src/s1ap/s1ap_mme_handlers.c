@@ -2528,8 +2528,6 @@ s1ap_mme_handle_error_ind_message (const sctp_assoc_id_t assoc_id, const sctp_st
   /** Get the Failure Message. */
   errorIndication_p = &message->msg.s1ap_ErrorIndicationIEs;
 
-  OAILOG_FUNC_IN (LOG_S1AP);
-
   enb_description_t * enb_ref = s1ap_is_enb_assoc_id_in_list (assoc_id);
   DevAssert(enb_ref);
 

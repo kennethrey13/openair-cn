@@ -1,7 +1,7 @@
 
 USER_EMAIL=$(shell git config --get user.email)
 
-EPC_VERSION=1.0.1.2
+EPC_VERSION=1.0.1.3
 CONF_VERSION=0.11.0
 DB_VERSION=0.9.12
 TARGET_DIR=./BUILD/
