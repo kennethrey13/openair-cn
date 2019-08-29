@@ -662,6 +662,8 @@ mme_app_pdn_process_session_creation(mme_ue_s1ap_id_t ue_id, fteid_t * saegw_s11
        */
       mme_app_desc.mme_ue_contexts.nb_bearers_managed++;
       mme_app_desc.mme_ue_contexts.nb_bearers_since_last_stat++;
+      update_mme_app_stats_default_bearer_add();
+
       /** Update the FTEIDs of the SAE-GW. */
       memcpy(&bearer_context->s_gw_fteid_s1u, &bcs_created->bearer_contexts[i].s1u_sgw_fteid, sizeof(fteid_t)); /**< Also copying the IPv4/V6 address. */
       memcpy(&bearer_context->p_gw_fteid_s5_s8_up, &bcs_created->bearer_contexts[i].s5_s8_u_pgw_fteid, sizeof(fteid_t));

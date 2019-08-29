@@ -917,7 +917,8 @@ mme_app_handle_delete_session_rsp (
    */
   mme_app_desc.mme_ue_contexts.nb_bearers_managed--;
   mme_app_desc.mme_ue_contexts.nb_bearers_since_last_stat--;
-
+  update_mme_app_stats_default_bearer_sub();
+  
   /**
    * Object is later removed, not here. For unused keys, this is no problem, just deregistrate the tunnel ids for the MME_APP
    * UE context from the hashtable.
