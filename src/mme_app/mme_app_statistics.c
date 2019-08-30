@@ -43,7 +43,7 @@ int mme_app_statistics_display (
   void)
 {
   OAILOG_DEBUG (LOG_MME_APP, "======================================= STATISTICS ============================================\n\n");
-  OAILOG_DEBUG (LOG_MME_APP, "               |  Current Status |  Added since last display  |  Removed since last display |\n");
+  OAILOG_DEBUG (LOG_MME_APP, "               |  Current Status |  Added since last display   |  Removed since last display |\n");
   OAILOG_DEBUG (LOG_MME_APP, "Connected HSS  | %10u      |            (N/A)            |           (N/A)             |\n", hss_associated);
   OAILOG_DEBUG (LOG_MME_APP, "Connected eNBs | %10u      |     %10u              |    %10u               |\n",mme_app_desc.nb_enb_connected,
                                           mme_app_desc.nb_enb_connected_since_last_stat,mme_app_desc.nb_enb_released_since_last_stat);
