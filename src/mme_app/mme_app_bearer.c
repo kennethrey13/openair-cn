@@ -492,6 +492,9 @@ mme_app_handle_initial_ue_message (
             if(old_ue_reference){
               OAILOG_ERROR (LOG_MME_APP, "MME_APP_INITIAL_UE_MESSAGE. ERROR***** Found an old UE_REFERENCE with enbUeS1apId " ENB_UE_S1AP_ID_FMT " and enbId %d.\n" ,
                   old_ue_reference->enb_ue_s1ap_id, ue_context->e_utran_cgi.cell_identity.enb_id);
+              OAILOG_ERROR (LOG_MME_APP, "SMS: This can appear if a registered UE sends TAU or SerivceRequest. Silently dropping and returning now...\n");
+              OAILOG_FUNC_OUT (LOG_MME_APP);
+
               s1ap_remove_ue(old_ue_reference);
 //              OAILOG_WARNING (LOG_MME_APP, "MME_APP_INITAIL_UE_MESSAGE. ERROR***** Removed old UE_REFERENCE with enbUeS1apId " ENB_UE_S1AP_ID_FMT " and enbId %d.\n" ,
 //                  old_ue_reference->enb_ue_s1ap_id, ue_context->e_utran_cgi.cell_identity.enb_id);
