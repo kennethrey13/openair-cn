@@ -1840,7 +1840,7 @@ mme_app_handle_enb_reset_req (const itti_s1ap_enb_initiated_reset_req_t * const 
 
   } else { // Partial Reset
     for (int i = 0; i < enb_reset_req->num_ue; i++) {
-      if (enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id == 0 && enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id == 0)
+      if (enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id == INVALID_MME_UE_S1AP_ID && enb_reset_req->ue_to_reset_list[i].enb_ue_s1ap_id == INVALID_ENB_UE_S1AP_ID_KEY)
         continue;
       else
         _mme_app_handle_s1ap_ue_context_release(enb_reset_req->ue_to_reset_list[i].mme_ue_s1ap_id,

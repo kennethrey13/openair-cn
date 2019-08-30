@@ -1898,7 +1898,7 @@ s1ap_mme_handle_handover_resource_allocation_failure(const sctp_assoc_id_t assoc
   memset ((void *)&message_p->ittiMsg.s1ap_handover_failure, 0, sizeof (itti_s1ap_handover_failure_t));
   /** Fill the S1AP Handover Failure elements per hand. */
   handover_failure_p->mme_ue_s1ap_id = handoverFailure_p->mme_ue_s1ap_id;
-//  handover_failure_p->enb_ue_s1ap_id = INVALID_ENB_UE_S1AP_ID;
+//  handover_failure_p->enb_ue_s1ap_id = INVALID_ENB_UE_S1AP_ID_KEY;
   /** Choice. */
   S1ap_Cause_PR cause_type = handoverFailure_p->cause.present;
 
@@ -2617,8 +2617,8 @@ s1ap_mme_handle_enb_reset (
   arg_s1ap_construct_enb_reset_req_t      arg = {0};
   uint32_t                                i = 0;
   int                                     rc = RETURNok;
-  mme_ue_s1ap_id_t  mme_ue_s1ap_id = 0;
-  enb_ue_s1ap_id_t  enb_ue_s1ap_id = 0;
+  mme_ue_s1ap_id_t  mme_ue_s1ap_id = INVALID_MME_UE_S1AP_ID;
+  enb_ue_s1ap_id_t  enb_ue_s1ap_id = INVALID_ENB_UE_S1AP_ID_KEY;
 
   OAILOG_FUNC_IN (LOG_S1AP);
   /*
@@ -2647,7 +2647,7 @@ s1ap_mme_handle_enb_reset (
 
   enb_reset_p = &message->msg.s1ap_ResetIEs;
 
-  if (enb_reset_p->resetType.present == RESET_PARTIAL) {
+  if (enb_reset_p->resetType.present == RESET_ALL) {
       OAILOG_ERROR (LOG_S1AP, "SMS: RESET_ALL message from eNB is not yet handled\n");
       // TBD - Here MME should send Error Indication as it is abnormal scenario.
       OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
@@ -2684,19 +2684,14 @@ s1ap_mme_handle_enb_reset (
   enb_ue_s1ap_id = val;
   enb_ue_s1ap_id &= ENB_UE_S1AP_ID_MASK;
 
-// TEST FOR EXISTENCE AND PULL OUT mme_ue_s1ap_id
+  // Test for existence and pull out mme_ue_s1ap_id if we have it stored somewhere
+  // (Default value = INVALID_MME_UE_S1AP_ID if ue_ref_p is NULL or invalid)
+  // (In practice we almost never RESET if we know mme_ue_s1ap_id)
   ue_ref_p = s1ap_is_ue_enb_id_in_list (enb_association, enb_ue_s1ap_id);
-
-  if (ue_ref_p == NULL) {
-      OAILOG_ERROR (LOG_S1AP, "Partial Reset Request without any valid S1 signaling connection.Ignoring it \n");
-      // TBD - Here MME should send Error Indication as it is abnormal scenario.
-      OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-  }
-
-  if (ue_ref_p->mme_ue_s1ap_id == INVALID_MME_UE_S1AP_ID) {
-    mme_ue_s1ap_id = 0;
-  } else {
-    mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
+  if (ue_ref_p != NULL) {
+    if (ue_ref_p->mme_ue_s1ap_id != INVALID_MME_UE_S1AP_ID) {
+      mme_ue_s1ap_id = ue_ref_p->mme_ue_s1ap_id;
+    }
   }
 
 // BUILD THE ITTI MESSAGE AND SEND IT
@@ -2890,38 +2885,56 @@ s1ap_handle_enb_initiated_reset_ack (
   S1ap_UE_associatedLogicalS1_ConnectionItem_t sig_conn_list[MAX_NUM_PARTIAL_S1_CONN_RESET] = {{0}};
   MessagesIds                             message_id = MESSAGES_ID_MAX;
   int                                     rc = RETURNok;
-  uint32_t                                enb_ue_id = 0;
-  uint32_t                                mme_ue_id = 0;
+  uint32_t                                enb_ue_id = INVALID_ENB_UE_S1AP_ID_KEY;
+  uint32_t                                mme_ue_id = INVALID_MME_UE_S1AP_ID;
 
 
   OAILOG_FUNC_IN (LOG_S1AP);
 
   if (enb_reset_ack_p->s1ap_reset_type != RESET_PARTIAL) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot send RESET_ALL Ack\n");
+    OAILOG_ERROR (LOG_S1AP, "SMS ERROR: Cannot send RESET_ALL Ack\n");
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
   if (enb_reset_ack_p->num_ue != 1) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: Cannot send RESET_PARTIAL Ack with num_ues=%d; currently only support num_ues=1.\n", enb_reset_ack_p->num_ue);
+    OAILOG_ERROR (LOG_S1AP, "SMS ERROR: Cannot send RESET_PARTIAL Ack with num_ues=%d; currently only support num_ues=1.\n", enb_reset_ack_p->num_ue);
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
   enb_ue_id = enb_reset_ack_p->ue_to_reset_list[0].enb_ue_s1ap_id;
+  mme_ue_id = enb_reset_ack_p->ue_to_reset_list[0].mme_ue_s1ap_id;
 
-  if (enb_ue_id == 0) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: enb_ue_s1ap_id == 0\n");
+  if (enb_ue_id == INVALID_ENB_UE_S1AP_ID_KEY) {
+    OAILOG_ERROR (LOG_S1AP, "SMS ERROR: enb_ue_s1ap_id is invalid!\n");
+    OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  }  
+
+  // if (mme_ue_id != INVALID_MME_UE_S1AP_ID) {
+  //   OAILOG_ERROR (LOG_S1AP, "SMS ERROR: mme_ue_s1ap_id is valid; we don't handle this case yet.\n");
+  //   OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
+  // }
+
+  bstring b;
+  if (enb_ue_id < 0x100) { // vals < 256 can cram into 8bits
+    uint8_t hex[]= {0x20, 0x0E, 0x00, 0x0E, 0x00, 0x00, 0x01, 0x00, 0x5D, 0x40, 0x07, 0x00, 0x00, 0x5B, 0x40, 0x02, 0x20, 0x00};
+    hex[17] = (uint8_t) enb_ue_id;
+    b = blk2bstr(&hex, 18);
+  } else if (enb_ue_id < 0x10000) { // these vals need 16bits
+    uint8_t hex[]= {0x20, 0x0E, 0x00, 0x0F, 0x00, 0x00, 0x01, 0x00, 0x5D, 0x40, 0x08, 0x00, 0x00, 0x5B, 0x40, 0x03, 0x24, 0x00, 0x00};
+    uint16_t *ptr = (uint16_t *) &hex[17];
+    *ptr = htons(enb_ue_id);
+    b = blk2bstr(&hex, 19);
+  } else if (enb_ue_id < 0x1000000) { // 24bits
+    uint8_t hex[]= {0x20, 0x0E, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0x5D, 0x40, 0x09, 0x00, 0x00, 0x5B, 0x40, 0x04, 0x28, 0x00, 0x00, 0x00};
+    uint32_t *ptr = (uint32_t *) &hex[16];
+    *ptr = htonl(enb_ue_id);
+    hex[16] = 0x28;
+    b = blk2bstr(&hex, 20);
+  } else { // > 24bits is an invalid value per asn1 spec
+    OAILOG_ERROR (LOG_S1AP, "SMS ERROR: enb_ue_s1ap_id is invalid, too large (>24bits) \n");
     OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
   }
 
-  if (enb_ue_id > 256) {
-    OAILOG_ERROR (LOG_S1AP, "ERROR: This code WILL NOT WORK because we cannot cram enb_ue_id %u into a uint8_t\n", enb_ue_id);
-    OAILOG_FUNC_RETURN (LOG_S1AP, RETURNerror);
-  }
-
-  uint8_t hex[]= {0x20, 0x0E, 0x00, 0x0E, 0x00, 0x00, 0x01, 0x00, 0x5D, 0x40, 0x07, 0x00, 0x00, 0x5B, 0x40, 0x02, 0x20, 0x00};
-  hex[17] = (uint8_t) enb_ue_id;
-  
-  bstring b = blk2bstr(&hex, 18);
   rc = s1ap_mme_itti_send_sctp_request (&b, enb_reset_ack_p->sctp_assoc_id, enb_reset_ack_p->sctp_stream_id, INVALID_MME_UE_S1AP_ID);
 
   OAILOG_FUNC_RETURN (LOG_S1AP, rc);
