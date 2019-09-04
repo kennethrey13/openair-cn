@@ -281,7 +281,7 @@ void itti_free_msg_content (MessageDef * const message_p)
     break;
 
   case UDP_DATA_IND:
-      itti_free (ITTI_MSG_ORIGIN_ID (message_p), bytes_received);
+      itti_free (ITTI_MSG_ORIGIN_ID (message_p), (UDP_DATA_IND(message_p))->buffer);
    break;
 
   default:
