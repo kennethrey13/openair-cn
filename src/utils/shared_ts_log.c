@@ -211,6 +211,7 @@ void* shared_log_task (__attribute__ ((unused)) void *args_p)
         break;
       }
       // Freeing the memory allocated from the memory pool
+      rc = itti_free (ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p->itti_msg);
       rc = itti_free (ITTI_MSG_ORIGIN_ID (received_message_p), received_message_p);
       AssertFatal (rc == EXIT_SUCCESS, "Failed to free memory (%d)!\n", rc);
       received_message_p = NULL;
