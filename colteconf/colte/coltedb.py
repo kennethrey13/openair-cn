@@ -33,7 +33,7 @@ if (command == "add"):
 	# TODO: error-handling? Check if imsi/msisdn/ip already in system?
 	print "coltedb: adding user " + str(imsi)
 
-	commit_str = "INSERT INTO pdn (users_imsi) VALUES ('" + imsi + "')"
+	commit_str = "INSERT INTO pdn (users_imsi, pdn_ipv4) VALUES ('" + imsi + "', '" + ip + "')"
 	cursor.execute(commit_str)
 
 	commit_str = "INSERT INTO users (imsi, msisdn, `key`, OPc) VALUES ('" + imsi + "', '" + msisdn + "', " + key + ", " + opc + ")"
