@@ -1,4 +1,10 @@
 # NOTICE:
+This repository is no longer maintained. We have migrated to primarily
+using open5gs due to a more responsive core development team and
+stronger commitment to stability for use outside a research
+environment.
+
+# Old Readme:
 This repo (https://github.com/uw-ictd/openair-cn.git) is a fork of the OpenAirInterface EPC (https://github.com/OPENAIRINTERFACE/openair-cn.git) is specifically intended to be a stable, long-term-support version of the code for use by people who simply want to get up and running with a basic LTE EPC. The EPC currently targets Release 14, which is the last of the LTE-Advanced releases before 5G; we have no current plans to support any other release.
 
 ## Which Branches Are Important And What Are The Changes?
